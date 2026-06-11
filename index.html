@@ -767,8 +767,10 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
     const vendorLabel = h.vendor || '구매처 미지정';
     infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px;">🏭 구매처: ${vendorLabel}</div>`;
   }
+  const workerUsername = h.worker ? h.worker.split('@')[0] : '-';
+  const workerRow = `<div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">🧑 작업자: ${workerUsername}</div>`;
   const delRow=`<div class="hist-actions"><button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
-  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
+  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}${workerRow}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
 function monthKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function orderYearChart(filteredOrders){
   const targetOrders = filteredOrders || S.history.filter(h=>h.kind==='order');
@@ -919,6 +921,7 @@ function showConfirm(msg,onYes){$('#modalRoot').innerHTML=`<div class="scrim" id
 
 function recordSelected(kind){
   if(SEL[kind].size===0){document.querySelectorAll('[data-sel]').forEach(r=>SEL[kind].add(r.dataset.sel));}
+  const worker = (currentUser && currentUser.email) ? currentUser.email : '';
   if(kind==='order'){
     const lines=[],items=[];let totalQty=0,spent=0;const subMap=subMapNow();
     SEL.order.forEach(key=>{const a=splitKey(key);const pid=a[0],k=a[1];const p=S.products.find(x=>x.id===pid);if(!p)return;const q=(ORD[key]!=null)?ORD[key]:orderNeed(pid,k,subMap);if(q<=0)return;const parts=k.split('|');lines.push({label:p.name+' '+parts[1]+' '+parts[0],amt:q});items.push({pid,k,amt:q});totalQty+=q;spent+=q*costOf(pid);});
@@ -926,7 +929,7 @@ function recordSelected(kind){
     const eta=Date.now()+(S.leadWeeks||0)*7*DAY();
     const vendorEl = document.getElementById('sel-vendor-order');
     const selectedVendor = vendorEl ? vendorEl.value : '';
-    S.history.push({id:uid(),ts:Date.now(),kind:'order',received:false,eta,title:'\uD83D\uDCE6 공급처 발주',total:totalQty,spent,lines,items,note:lines.length+'개 옵션 · 금액 '+won(spent),vendor:selectedVendor});
+    S.history.push({id:uid(),ts:Date.now(),kind:'order',received:false,eta,title:'\uD83D\uDCE6 공급처 발주',total:totalQty,spent,lines,items,note:lines.length+'개 옵션 · 금액 '+won(spent),vendor:selectedVendor,worker});
     SEL.order.forEach(key=>delete ORD[key]);SEL.order.clear();save();toast('발주 '+totalQty+'개 / '+won(spent)+' 기록됨 ✓ (도착예정 '+fmtDate(eta)+')');TAB='hist';render();return;
   }
   const sel=[...SEL.rg].map(key=>{const i=key.lastIndexOf('|');return {biz:key.slice(0,i),idx:+key.slice(i+1)};}).filter(x=>S.rgBoards[x.biz]&&S.rgBoards[x.biz].items[x.idx]);
@@ -936,7 +939,7 @@ function recordSelected(kind){
     else{unlinked++;lines.push({label:it.opt.split(/\s*-\s*/)[0]+' (미연결)',amt:q});}});
   if(!lines.length){toast('기록할 입고 수량이 없어요');return;}
   const bizes=[...new Set(sel.map(o=>o.biz))].join(', ');
-  S.history.push({id:uid(),ts:Date.now(),kind:'rg',biz:bizes,title:'🚀 ' + bizes + ' 입고',targetDays:S.rgTargetDays,total:totalQty,spent,lines,items,note:'창고차감 '+deducted+'개'+(unlinked?' · 미연결 '+unlinked+'개(차감X)':'')+' · 금액 '+won(spent)});
+  S.history.push({id:uid(),ts:Date.now(),kind:'rg',biz:bizes,title:'🚀 ' + bizes + ' 입고',targetDays:S.rgTargetDays,total:totalQty,spent,lines,items,note:'창고차감 '+deducted+'개'+(unlinked?' · 미연결 '+unlinked+'개(차감X)':'')+' · 금액 '+won(spent),worker});
   sel.forEach(o=>{S.rgBoards[o.biz].items[o.idx].send=0;});SEL.rg.clear();save();toast('입고 '+totalQty+'개 / '+won(spent)+' 기록됨 ✓');TAB='hist';render();}
 
 /* option/num parse */
