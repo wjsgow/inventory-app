@@ -320,7 +320,7 @@ try {
 const KEY='inv-data-v5';
 const DEF_CH=["쿠팡A","쿠팡B","에이블A","에이블B"];
 const DEF_SIZEMAP={'S':'70','M':'75','L':'80','XL':'85','XXL':'90'};
-const DEFAULT={channels:DEF_CH.slice(),chType:{},minInbound:20,targetWeeks:4,warnWeeks:2,leadWeeks:2,safetyWeeks:1,orderMode:'B',subRecent:true,subRecentDays:7,round5:false,rgTargetDays:10,cost:{},warnQty:{},budget:500000,sizeMap:Object.assign({},DEF_SIZEMAP),products:[],rgBoards:{},prodLinks:{},optLinks:{},history:[]};
+const DEFAULT={channels:DEF_CH.slice(),chType:{},minInbound:20,targetWeeks:4,warnWeeks:2,leadWeeks:2,safetyWeeks:1,orderMode:'B',subRecent:true,subRecentDays:7,round5:false,rgTargetDays:10,cost:{},warnQty:{},budget:500000,sizeMap:Object.assign({},DEF_SIZEMAP),sizeMapExceptions:{},applySizeMapAll:false,products:[],rgBoards:{},prodLinks:{},optLinks:{},history:[]};
 let S=JSON.parse(JSON.stringify(DEFAULT)),TAB='stock';
 const UI={};
 const $=s=>document.querySelector(s);
@@ -365,7 +365,7 @@ async function load(){
   }
   
   if(!S.chType)S.chType={};if(!S.rgBoards)S.rgBoards={};if(S.minInbound==null)S.minInbound=20;
-  if(!S.sizeMap)S.sizeMap=Object.assign({},DEF_SIZEMAP);if(!S.prodLinks)S.prodLinks={};if(!S.optLinks)S.optLinks={};
+  if(!S.sizeMap)S.sizeMap=Object.assign({},DEF_SIZEMAP);if(!S.sizeMapExceptions)S.sizeMapExceptions={};if(S.applySizeMapAll==null)S.applySizeMapAll=false;if(!S.prodLinks)S.prodLinks={};if(!S.optLinks)S.optLinks={};
   if(S.leadWeeks==null)S.leadWeeks=2;if(S.safetyWeeks==null)S.safetyWeeks=1;if(!S.orderMode)S.orderMode='B';
   if(S.rgTargetDays==null)S.rgTargetDays=10;if(!S.cost)S.cost={};if(!S.warnQty)S.warnQty={};if(S.budget==null)S.budget=500000;
   if(S.subRecent==null)S.subRecent=(S.orderSubtractPending!=null?S.orderSubtractPending:true);if(S.subRecentDays==null)S.subRecentDays=(S.hideRecentDays||7);
@@ -583,10 +583,7 @@ function orderCount(p){let n=0;p.sizes.forEach(sz=>p.colors.forEach(co=>{const s
 
 /* alerts */
 function renderAlerts(){
-  const rgU=[];Object.entries(S.rgBoards).forEach(([biz,b])=>{const u=(b.items||[]).filter(it=>it.days!=null&&it.days<=3&&it.rec>0);if(u.length)rgU.push({biz,n:u.length});});
-  let html='';
-  if(rgU.length)html+=`<div class="alert-box danger"><div class="alert-title">🚀 로켓그로스 입고 시급</div><div class="alert-list">${rgU.map(x=>`<div>${x.biz} → 소진임박 <b>${x.n}개 옵션</b> (🚀 로켓그로스 탭에서 입고)</div>`).join('')}</div></div>`;
-  $('#alerts').innerHTML=html;
+  $('#alerts').innerHTML='';
 }
 
 /* ===== STOCK GRID ===== */
@@ -613,7 +610,7 @@ function cardHTML(p){const u=uiOf(p);
     <div class="psum"><span>창고 <b>${sumWh(p)}</b></span><span>전체주간판매 <b>${sumTotalSales(p)}</b></span><span>옵션 ${p.sizes.length*p.colors.length}</span></div>
   </div><div class="head-actions"><button class="linkbtn" data-edit="${p.id}">✎ 편집</button></div></div>
   <div class="chtabs">${chtabs}</div>${modebar}${matrixHTML(p)}${foot}</div>`;}
-function renderStock(){if(!S.products.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 이지어드민 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;return S.products.map(cardHTML).join('');}
+function renderStock(){if(!S.products.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;return S.products.map(cardHTML).join('');}
 
 /* ===== SUPPLIER ORDER ===== */
 let ORD={};
@@ -714,9 +711,9 @@ function renderRG(){
     Object.entries(groups).forEach(([pn,arr])=>{
       arr.sort((x,y)=>(x.days==null?999:x.days)-(y.days==null?999:y.days));
       const linkedPid=S.prodLinks[pn]||'';const sugg=linkedPid?'':suggestProduct(pn);
-      const prodSel=`<select class="rg-prodsel" data-cp="${encodeURIComponent(pn)}"><option value="">— 이지어드민 상품 연결 —</option>${S.products.map(p=>`<option value="${p.id}" ${linkedPid===p.id?'selected':''}>${p.name}${sugg===p.id?' (추천)':''}</option>`).join('')}</select>`;
+      const prodSel=`<select class="rg-prodsel" data-cp="${encodeURIComponent(pn)}"><option value="">— 내창고 상품 연결 —</option>${S.products.map(p=>`<option value="${p.id}" ${linkedPid===p.id?'selected':''}>${p.name}${sugg===p.id?' (추천)':''}</option>`).join('')}</select>`;
       body+=`<div class="pgroup">📦 쿠팡: ${pn} <span style="font-weight:600;font-size:12px;color:var(--ink-soft)">→</span> ${prodSel}</div>`;
-      body+=`<div class="matrixwrap" style="padding-top:0"><table class="rg-table"><thead><tr><th></th><th class="l">쿠팡 옵션</th><th>재고</th><th>입고예정</th><th>7일</th><th>소진</th><th>쿠팡<br>추천</th><th>우리<br>계산</th><th>보낼<br>수량</th><th>금액</th><th>누적</th><th class="l">이지어드민</th></tr></thead><tbody>`+
+      body+=`<div class="matrixwrap" style="padding-top:0"><table class="rg-table"><thead><tr><th></th><th class="l">쿠팡 옵션</th><th>재고</th><th>입고예정</th><th>7일</th><th>소진</th><th>쿠팡<br>추천</th><th>우리<br>계산</th><th>보낼<br>수량</th><th>금액</th><th>누적</th><th class="l">내창고</th></tr></thead><tbody>`+
         arr.map(it=>{const lk=resolveLink(it);let linkCell,c=0;
           if(lk.status==='ok'){const p=S.products.find(x=>x.id===lk.pid);const [sz,co]=lk.k.split('|');linkCell=`<span style="color:var(--good);font-weight:600">${co} ${sz} ✅</span>`;c=costOf(lk.pid);}
           else if(lk.status==='noprod'){linkCell=`<span class="muted">상품연결</span>`;}
@@ -875,10 +872,23 @@ function parseOpt(s){s=(s||'').trim().replace(/^\[/,'').replace(/\]$/,'').trim()
 function sortSizes(a){const n=a.filter(x=>/^\d+$/.test(x)).sort((x,y)=>x-y);const r=a.filter(x=>!/^\d+$/.test(x));return[...n,...r];}
 function num(v){if(v==null||v==='-'||v==='')return 0;const n=parseFloat(String(v).replace(/[,\s]/g,''));return isNaN(n)?0:Math.round(n);}
 function parseDays(v){if(v==null)return null;const m=String(v).match(/(\d+)/);return m?parseInt(m[1]):null;}
+function normalizeSize(size, biz) {
+  if (!size) return '기본';
+  const sizeUpper = String(size).trim().toUpperCase();
+  if (biz && S.sizeMapExceptions && S.sizeMapExceptions[biz]) {
+    const norm = S.sizeMapExceptions[biz][sizeUpper];
+    if (norm != null) return norm;
+  }
+  if (S.applySizeMapAll || (biz && (biz.includes("쿠팡") || biz.includes("로켓")))) {
+    const norm = (S.sizeMap || {})[sizeUpper];
+    if (norm != null) return norm;
+  }
+  return size;
+}
 /* 쿠팡 옵션 정규화: ' - 80D...' 뒷부분 버리고, 마지막 토큰=사이즈(변환표 적용), 앞=색상 */
-function parseCoupangOpt(s){let t=String(s||'').split(/\s*-\s*/)[0].trim();const parts=t.split(/\s+/).filter(Boolean);
+function parseCoupangOpt(s, biz){let t=String(s||'').split(/\s*-\s*/)[0].trim();const parts=t.split(/\s+/).filter(Boolean);
   let size='기본',color=t;if(parts.length>=2){size=parts[parts.length-1];color=parts.slice(0,-1).join(' ');}
-  const norm=(S.sizeMap||{})[size.toUpperCase()];return {color:color||'기본',size:norm||size,sizeRaw:size};}
+  return {color:color||'기본',size:normalizeSize(size, biz),sizeRaw:size};}
 const noSpace=s=>String(s||'').replace(/\s/g,'');
 /* 연결된 상품 안에서 (색상,사이즈)로 옵션 자동 매칭 */
 function autoMatchOpt(pid,color,size){const p=S.products.find(x=>x.id===pid);if(!p)return null;
@@ -915,13 +925,13 @@ function applyCoupangFile(raw,biz){
   const H0=Array.from(raw[0]||[],x=>String(x==null?'':x).trim());
   const cols={name:guess(H0,['등록상품명']),opt:guess(H0,['옵션명']),sku:guess(H0,['SKU ID']),stock:guess(H0,['판매가능재고']),incoming:guess(H0,['입고예정']),sales7:guess(H0,['최근 판매수량']),rec:guess(H0,['추가입고','추천']),days:guess(H0,['소진'])};
   const dataRows=raw.slice(2).filter(r=>r[cols.name]&&r[cols.opt]);
-  const items=dataRows.map(r=>{const optRaw=String(r[cols.opt]).trim();const pc=parseCoupangOpt(optRaw);const it={product:String(r[cols.name]).trim(),opt:optRaw,color:pc.color,size:pc.size,sizeRaw:pc.sizeRaw,sku:cols.sku>=0?String(r[cols.sku]||''):optRaw,stock:num(r[cols.stock]),incoming:num(r[cols.incoming]),sales7:num(r[cols.sales7]),rec:num(r[cols.rec]),days:parseDays(r[cols.days])};it.send=0;return it;});
+  const items=dataRows.map(r=>{const optRaw=String(r[cols.opt]).trim();const pc=parseCoupangOpt(optRaw,biz);const it={product:String(r[cols.name]).trim(),opt:optRaw,color:pc.color,size:pc.size,sizeRaw:pc.sizeRaw,sku:cols.sku>=0?String(r[cols.sku]||''):optRaw,stock:num(r[cols.stock]),incoming:num(r[cols.incoming]),sales7:num(r[cols.sales7]),rec:num(r[cols.rec]),days:parseDays(r[cols.days])};it.send=0;return it;});
   items.forEach(it=>{it.send=rgRecommend(biz,it).need;});
   S.rgBoards[biz]={importedAt:Date.now(),items};
   if(!S.channels.includes(biz)){S.channels.push(biz);S.chType[biz]='fulfill';S.products.forEach(normalize);}else S.chType[biz]='fulfill';
   return items.length;}
-function applyStockFile(raw){const H=Array.from(raw[0]||[],x=>String(x==null?'':x).trim());const gi={name:guess(H,['이지어드민 상품명','상품명']),opt:guess(H,['이지어드민 옵션','옵션']),code:guess(H,['상품코드','바코드']),stock:guess(H,['현재고','가용재고','재고','수량'])};return applyStock(raw.slice(1),{dest:'wh',name:gi.name,opt:gi.opt,code:gi.code,stock:gi.stock});}
-function applySalesFile(raw,period){const H=Array.from(raw[0]||[],x=>String(x==null?'':x).trim());const gi={ch:guess(H,['판매처']),qty:guess(H,['판매수량','판매량']),name:guess(H,['이지어드민 상품명','상품명']),opt:guess(H,['이지어드민 옵션','옵션'])};return applySales(raw.slice(1),{ch:gi.ch,name:gi.name,opt:gi.opt,qty:gi.qty,period:period});}
+function applyStockFile(raw){const H=Array.from(raw[0]||[],x=>String(x==null?'':x).trim());const gi={name:guess(H,['이지어드민 상품명','상품명','매칭상품명','등록상품명','Product Name','Item Name']),opt:guess(H,['이지어드민 옵션','옵션','옵션명','규격','사이즈','Option','Size','Option Name']),code:guess(H,['상품코드','바코드','자체상품코드','Product Code','Barcode']),stock:guess(H,['현재고','가용재고','재고','수량','재고수량','합계','Stock','Qty','Quantity'])};return applyStock(raw.slice(1),{dest:'wh',name:gi.name,opt:gi.opt,code:gi.code,stock:gi.stock});}
+function applySalesFile(raw,period){const H=Array.from(raw[0]||[],x=>String(x==null?'':x).trim());const gi={ch:guess(H,['판매처','채널','Channel','Store']),qty:guess(H,['판매수량','판매량','수량','합계','Sales Qty','Qty']),name:guess(H,['이지어드민 상품명','상품명','매칭상품명','등록상품명','Product Name','Item Name']),opt:guess(H,['이지어드민 옵션','옵션','옵션명','규격','사이즈','Option','Size','Option Name'])};return applySales(raw.slice(1),{ch:gi.ch,name:gi.name,opt:gi.opt,qty:gi.qty,period:period});}
 function fulfillBizOptions(sel){const ch=S.channels.filter(isFulfill);const list=ch.length?ch:['로켓그로스(odo)','로켓그로스(르랜)'];return list.map(c=>`<option ${sel===c?'selected':''}>${c}</option>`).join('')+`<option value="__custom" ${sel==='__custom'?'selected':''}>+ 직접 입력</option>`;}
 const IMP={stock:null,sales:null,salesPeriod:0,coupang:[]};
 function openImport(forceRG){
@@ -999,13 +1009,13 @@ async function runImport(){
 
 function findOrCreateProduct(name){let p=S.products.find(x=>x.name===name);if(!p){p={id:uid(),name:name||'(이름없음)',sizes:[],colors:[],sku:{}};S.products.push(p);}return p;}
 function ensureSku(p,size,color){if(!p.sizes.includes(size)){p.sizes.push(size);p.sizes=sortSizes(p.sizes);}if(!p.colors.includes(color))p.colors.push(color);normalize(p);return p.sku[K(size,color)];}
-function applyStock(rows,m){let ps=new Set(),n=0,created=0;rows.forEach(r=>{const name=m.name>=0?String(r[m.name]||'').trim():'(이름없음)';const optRaw=m.opt>=0?String(r[m.opt]||'').trim():'';if(!optRaw&&!name)return;const {color,size}=parseOpt(optRaw);const code=m.code>=0?String(r[m.code]||'').trim():'';const stock=m.stock>=0?num(r[m.stock]):0;const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;const sk=ensureSku(p,size,color);if(code)sk.code=code;if(m.dest==='wh')sk.wh=stock;else sk.ch[m.dest].stock=stock;ps.add(p.id);n++;});return{msg:`재고 가져오기 완료 — 상품 ${ps.size} · 옵션 ${n}${created?` (신규 ${created})`:''}`};}
+function applyStock(rows,m){let ps=new Set(),n=0,created=0;rows.forEach(r=>{const name=m.name>=0?String(r[m.name]||'').trim():'(이름없음)';const optRaw=m.opt>=0?String(r[m.opt]||'').trim():'';if(!optRaw&&!name)return;const {color,size: rawSize}=parseOpt(optRaw);const size = normalizeSize(rawSize, m.dest);const code=m.code>=0?String(r[m.code]||'').trim():'';const stock=m.stock>=0?num(r[m.stock]):0;const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;const sk=ensureSku(p,size,color);if(code)sk.code=code;if(m.dest==='wh')sk.wh=stock;else sk.ch[m.dest].stock=stock;ps.add(p.id);n++;});return{msg:`재고 가져오기 완료 — 상품 ${ps.size} · 옵션 ${n}${created?` (신규 ${created})`:''}`};}
 function applySales(rows,m){const found=[...new Set(rows.map(r=>String(r[m.ch]||'').trim()).filter(Boolean))];
   const noData=!S.products.some(p=>sumTotalSales(p)>0);const isDefault=JSON.stringify(S.channels)===JSON.stringify(DEF_CH)&&noData;
   if(isDefault&&found.length){S.channels=found.slice();S.chType={};}else found.forEach(c=>{if(!S.channels.includes(c))S.channels.push(c);});
   ensureTypes();S.products.forEach(normalize);
   const acc=new Map();let ps=new Set(),n=0,created=0;
-  rows.forEach(r=>{const ch=String(r[m.ch]||'').trim();const name=String(r[m.name]||'').trim();const optRaw=String(r[m.opt]||'').trim();if(!ch||!optRaw)return;const {color,size}=parseOpt(optRaw);const qty=num(r[m.qty]);const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;ensureSku(p,size,color);acc.set(p.id+'\u0001'+K(size,color)+'\u0001'+ch,(acc.get(p.id+'\u0001'+K(size,color)+'\u0001'+ch)||0)+qty);ps.add(p.id);n++;});
+  rows.forEach(r=>{const ch=String(r[m.ch]||'').trim();const name=String(r[m.name]||'').trim();const optRaw=String(r[m.opt]||'').trim();if(!ch||!optRaw)return;const {color,size: rawSize}=parseOpt(optRaw);const size = normalizeSize(rawSize, ch);const qty=num(r[m.qty]);const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;ensureSku(p,size,color);acc.set(p.id+'\u0001'+K(size,color)+'\u0001'+ch,(acc.get(p.id+'\u0001'+K(size,color)+'\u0001'+ch)||0)+qty);ps.add(p.id);n++;});
   for(const [key,sum] of acc){const [pid,k,ch]=key.split('\u0001');const p=S.products.find(x=>x.id===pid);if(p&&p.sku[k]&&p.sku[k].ch[ch])p.sku[k].ch[ch].sales=Math.round(sum/m.period);}
   return{msg:`판매 가져오기 완료 — 판매처 ${found.length} · 상품 ${ps.size} · 항목 ${n}${created?` (신규옵션 ${created})`:''}`};}
 
@@ -1018,27 +1028,210 @@ function openProductModal(pid){const editing=!!pid;const p=editing?S.products.fi
   $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});$('#mc').onclick=closeModal;
   $('#ms').onclick=()=>{const nm=$('#pn').value.trim();const sz=sortSizes($('#ps').value.split(',').map(x=>x.trim()).filter(Boolean));const co=$('#pc').value.split(',').map(x=>x.trim()).filter(Boolean);if(!sz.length||!co.length){toast('사이즈·색상을 입력하세요');return;}
     if(editing){const old=p.sku;p.name=nm;p.sizes=sz;p.colors=co;p.sku={};sz.forEach(a=>co.forEach(b=>{const k=K(a,b);p.sku[k]=old[k]||{code:'',wh:0,ch:{}};}));normalize(p);}else{const np={id:uid(),name:nm,sizes:sz,colors:co,sku:{}};normalize(np);S.products.push(np);}save();closeModal();TAB='stock';render();};}
+function syncSettingsFromUI() {
+  const twEl = $('#tw'), wwEl = $('#ww'), miEl = $('#mi');
+  if (twEl) S.targetWeeks = Math.max(1, parseInt(twEl.value) || 4);
+  if (wwEl) S.warnWeeks = Math.max(1, parseInt(wwEl.value) || 2);
+  if (miEl) S.minInbound = Math.max(0, parseInt(miEl.value) || 0);
+
+  // Rebuild S.sizeMap
+  const newSizeMap = {};
+  document.querySelectorAll('.sz-row').forEach(row => {
+    const k = row.querySelector('.sz-key').value.trim().toUpperCase();
+    const v = row.querySelector('.sz-val').value.trim();
+    if (k) newSizeMap[k] = v;
+  });
+  S.sizeMap = newSizeMap;
+
+  // Save S.applySizeMapAll
+  const applyAllEl = $('#apply_sz_all');
+  if (applyAllEl) S.applySizeMapAll = applyAllEl.checked;
+
+  // Rebuild S.sizeMapExceptions
+  const newExceptions = {};
+  document.querySelectorAll('.sz-exception-box').forEach(box => {
+    const ch = box.dataset.ch;
+    const map = {};
+    box.querySelectorAll('.sz-ex-row').forEach(row => {
+      const k = row.querySelector('.sz-ex-key').value.trim().toUpperCase();
+      const v = row.querySelector('.sz-ex-val').value.trim();
+      if (k) map[k] = v;
+    });
+    newExceptions[ch] = map;
+  });
+  S.sizeMapExceptions = newExceptions;
+
+  // Save S.channels
+  const chsEl = $('#chs');
+  if (chsEl) {
+    const nc = chsEl.value.split(',').map(x => x.trim()).filter(Boolean);
+    if (nc.length) {
+      S.channels = nc;
+      ensureTypes();
+      S.products.forEach(normalize);
+    }
+  }
+}
+
 function openSettings(){const types=S.channels.map(c=>`<div class="typetoggle"><span>${c}</span><span class="seg"><button data-c="${c}" data-t="fulfill" class="${isFulfill(c)?'on':''}">🚀 창고형</button><button data-c="${c}" data-t="central" class="${isFulfill(c)?'':'on'}">➡️ 직출고</button></span></div>`).join('');
-  const sizeRows=Object.entries(S.sizeMap).map(([k,v])=>`<span class="chip" style="display:inline-flex;align-items:center;gap:4px">${k} → <input class="sz-in" data-k="${k}" value="${v}" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center"> <span class="sz-del" data-k="${k}" style="cursor:pointer;color:var(--bad)">✕</span></span>`).join('');
+  const sizeRows=Object.entries(S.sizeMap).map(([k,v])=>`
+    <span class="chip sz-row" style="display:inline-flex;align-items:center;gap:4px">
+      <input class="sz-key" value="${k}" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+      →
+      <input class="sz-val" value="${v}" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+      <span class="sz-del" style="cursor:pointer;color:var(--bad)">✕</span>
+    </span>
+  `).join('');
+
+  const exBoxes = Object.entries(S.sizeMapExceptions || {}).map(([ch, map]) => {
+    const rows = Object.entries(map).map(([k, v]) => `
+      <span class="chip sz-ex-row" style="display:inline-flex;align-items:center;gap:4px">
+        <input class="sz-ex-key" value="${k}" placeholder="사이즈" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+        →
+        <input class="sz-ex-val" value="${v}" placeholder="내창고" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+        <span class="sz-ex-del" style="cursor:pointer;color:var(--bad)">✕</span>
+      </span>
+    `).join('');
+    
+    return `
+      <div class="sz-exception-box" data-ch="${ch}" style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#faf9ff">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12.5px;font-weight:700">🚚 ${ch}</span>
+          <div style="display:inline-flex;gap:8px">
+            <button class="linkbtn sz-ex-add-row" style="font-size:11px;text-decoration:none;color:var(--blue)">+ 매칭 추가</button>
+            <button class="linkbtn sz-ex-box-del" style="font-size:11px;text-decoration:none;color:var(--bad)">보드 삭제</button>
+          </div>
+        </div>
+        <div class="chips" style="margin:0">${rows || '<span class="muted" style="font-size:11px">등록된 매칭이 없습니다.</span>'}</div>
+      </div>
+    `;
+  }).join('');
+
+  const addExOptions = S.channels.filter(c => !(S.sizeMapExceptions && S.sizeMapExceptions[c])).map(c => `<option value="${c}">${c}</option>`).join('');
+
   $('#modalRoot').innerHTML=`<div class="scrim" id="scrim"><div class="modal" style="max-width:560px"><div class="modal-head"><h3>설정</h3></div>
-    <div class="modal-body"><div class="target-row">목표 재고 <input id="tw" type="number" min="1" value="${S.targetWeeks}">주 · 발주경고 <input id="ww" type="number" min="1" value="${S.warnWeeks}">주 · 로켓그로스 최소입고 <input id="mi" type="number" min="0" value="${S.minInbound}">개</div>
-    <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:12px 0 4px">쿠팡 사이즈 → 이지어드민 사이즈 변환표 (전 상품 공통)</div>
-    <div class="chips" id="szList">${sizeRows}</div>
-    <div style="display:flex;gap:6px;margin-bottom:4px"><input id="szk" placeholder="쿠팡(예:3XL)" style="flex:1;border:1.5px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px"><input id="szv" placeholder="이지(예:95)" style="flex:1;border:1.5px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px"><button class="btn ghost sm" id="szadd">추가</button></div>
-    <p style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">※ 변환표에 없는 사이즈(예: 80C)는 그대로 사용돼요. (상품별 원가·경고수량은 상단 <b>📦 상품관리</b>에서 설정)</p>
-    <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:14px 0 2px">판매처 유형 (창고형=풀필먼트 재고 별도 / 직출고=내 창고 직출고)</div>
-    <div id="typeList">${types||'<span class="muted" style="font-size:12.5px">판매 파일을 올리면 판매처가 나타나요.</span>'}</div>
-    <label class="fld" style="margin-top:12px"><span>판매처 직접 수정 (쉼표 구분)</span><input id="chs" value="${S.channels.join(', ')}"></label></div>
+    <div class="modal-body">
+      <div class="target-row">목표 재고 <input id="tw" type="number" min="1" value="${S.targetWeeks}">주 · 발주경고 <input id="ww" type="number" min="1" value="${S.warnWeeks}">주 · 로켓그로스 최소입고 <input id="mi" type="number" min="0" value="${S.minInbound}">개</div>
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 4px">
+        <span style="font-size:12px;color:var(--ink-soft);font-weight:700">판매처 사이즈 → 내창고 사이즈 변환표 (전 상품 공통)</span>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-soft);font-weight:700;cursor:pointer">
+          <input type="checkbox" id="apply_sz_all" ${S.applySizeMapAll?'checked':''}> 모든 판매처에 공통 적용
+        </label>
+      </div>
+      <div class="chips" id="szList">${sizeRows}</div>
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input id="szk" placeholder="판매처 사이즈(예:3XL)" style="flex:1;border:1.5px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px">
+        <input id="szv" placeholder="내창고 사이즈(예:95)" style="flex:1;border:1.5px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px">
+        <button class="btn ghost sm" id="szadd">추가</button>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">※ 변환표에 없는 사이즈(예: 80C)는 그대로 사용돼요. (상품별 원가·경고수량은 상단 <b>📦 상품관리</b>에서 설정)</p>
+      
+      <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:14px 0 4px;display:flex;align-items:center;justify-content:space-between">
+        <span>판매처별 예외 사이즈 변환표</span>
+        <select id="addExSelect" style="width:auto;font-size:11.5px;border:1.5px solid var(--line);border-radius:6px;padding:2px 6px">
+          <option value="">+ 예외 판매처 추가</option>
+          ${addExOptions}
+        </select>
+      </div>
+      <div id="exMapList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+        ${exBoxes}
+      </div>
+
+      <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:14px 0 2px">판매처 유형 (창고형=풀필먼트 재고 별도 / 직출고=내 창고 직출고)</div>
+      <div id="typeList">${types||'<span class="muted" style="font-size:12.5px">판매 파일을 올리면 판매처가 나타나요.</span>'}</div>
+      <label class="fld" style="margin-top:12px"><span>판매처 직접 수정 (쉼표 구분)</span><input id="chs" value="${S.channels.join(', ')}"></label>
+    </div>
     <div class="modal-foot"><button class="btn ghost" id="mc">취소</button><button class="btn clay" id="ms">저장</button></div></div></div>`;
-  $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});$('#mc').onclick=closeModal;
-  $('#typeList').addEventListener('click',e=>{const c=e.target.dataset.c,t=e.target.dataset.t;if(!c)return;S.chType[c]=t;e.target.closest('.seg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));});
-  $('#szList').addEventListener('click',e=>{if(e.target.classList.contains('sz-del')){delete S.sizeMap[e.target.dataset.k];openSettingsReopen();}});
-  $('#szList').addEventListener('input',e=>{if(e.target.classList.contains('sz-in'))S.sizeMap[e.target.dataset.k]=e.target.value.trim();});
-  $('#szadd').onclick=()=>{const k=$('#szk').value.trim().toUpperCase(),v=$('#szv').value.trim();if(k&&v){S.sizeMap[k]=v;openSettingsReopen();}};
-  function openSettingsReopen(){save();openSettings();}
-  $('#ms').onclick=()=>{S.targetWeeks=Math.max(1,parseInt($('#tw').value)||4);S.warnWeeks=Math.max(1,parseInt($('#ww').value)||2);S.minInbound=Math.max(0,parseInt($('#mi').value)||0);
-    document.querySelectorAll('.sz-in').forEach(i=>{if(i.dataset.k)S.sizeMap[i.dataset.k]=i.value.trim();});
-    const nc=$('#chs').value.split(',').map(x=>x.trim()).filter(Boolean);if(nc.length){S.channels=nc;ensureTypes();S.products.forEach(normalize);}save();closeModal();render();};}
+
+  $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});
+  $('#mc').onclick=closeModal;
+  
+  $('#typeList').addEventListener('click',e=>{
+    const c=e.target.dataset.c,t=e.target.dataset.t;
+    if(!c)return;
+    S.chType[c]=t;
+    e.target.closest('.seg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  });
+
+  $('#szList').addEventListener('click', e => {
+    if (e.target.classList.contains('sz-del')) {
+      e.target.closest('.sz-row').remove();
+      syncSettingsFromUI();
+      save();
+      openSettings();
+    }
+  });
+
+  const exMapList = $('#exMapList');
+  if (exMapList) {
+    exMapList.addEventListener('click', e => {
+      const t = e.target;
+      if (t.classList.contains('sz-ex-add-row')) {
+        const box = t.closest('.sz-exception-box');
+        const chips = box.querySelector('.chips');
+        const emptyRow = document.createElement('span');
+        emptyRow.className = 'chip sz-ex-row';
+        emptyRow.style.display = 'inline-flex';
+        emptyRow.style.alignItems = 'center';
+        emptyRow.style.gap = '4px';
+        emptyRow.innerHTML = `
+          <input class="sz-ex-key" value="" placeholder="사이즈" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+          →
+          <input class="sz-ex-val" value="" placeholder="내창고" style="width:46px;font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:2px 4px;text-align:center">
+          <span class="sz-ex-del" style="cursor:pointer;color:var(--bad)">✕</span>
+        `;
+        const muted = chips.querySelector('.muted');
+        if (muted) muted.remove();
+        chips.appendChild(emptyRow);
+        emptyRow.querySelector('.sz-ex-key').focus();
+      }
+      else if (t.classList.contains('sz-ex-del')) {
+        const chip = t.closest('.sz-ex-row');
+        const chips = chip.parentNode;
+        chip.remove();
+        if (chips.children.length === 0) {
+          chips.innerHTML = '<span class="muted" style="font-size:11px">등록된 매칭이 없습니다.</span>';
+        }
+      }
+      else if (t.classList.contains('sz-ex-box-del')) {
+        t.closest('.sz-exception-box').remove();
+      }
+    });
+  }
+
+  $('#szadd').onclick=()=>{
+    const k=$('#szk').value.trim().toUpperCase();
+    const v=$('#szv').value.trim();
+    if(k){
+      syncSettingsFromUI();
+      S.sizeMap[k]=v;
+      save();
+      openSettings();
+    }
+  };
+
+  const addExSelect = $('#addExSelect');
+  if (addExSelect) {
+    addExSelect.onchange = e => {
+      const ch = e.target.value;
+      if (ch) {
+        syncSettingsFromUI();
+        if (!S.sizeMapExceptions) S.sizeMapExceptions = {};
+        S.sizeMapExceptions[ch] = {};
+        save();
+        openSettings();
+      }
+    };
+  }
+
+  $('#ms').onclick=()=>{
+    syncSettingsFromUI();
+    save();
+    closeModal();
+    render();
+  };
+}
 // Init flow
 window.addEventListener('DOMContentLoaded', async () => {
   // Bind standard UI actions
