@@ -320,7 +320,7 @@ try {
 const KEY='inv-data-v5';
 const DEF_CH=["쿠팡A","쿠팡B","에이블A","에이블B"];
 const DEF_SIZEMAP={'S':'70','M':'75','L':'80','XL':'85','XXL':'90'};
-const DEFAULT={channels:DEF_CH.slice(),chType:{},minInbound:20,targetWeeks:4,warnWeeks:2,leadWeeks:2,safetyWeeks:1,orderMode:'B',subRecent:true,subRecentDays:7,round5:false,rgTargetDays:10,cost:{},warnQty:{},budget:500000,sizeMap:Object.assign({},DEF_SIZEMAP),sizeMapExceptions:{},applySizeMapAll:false,products:[],rgBoards:{},prodLinks:{},optLinks:{},history:[]};
+const DEFAULT={channels:DEF_CH.slice(),chType:{},minInbound:20,targetWeeks:4,warnWeeks:2,leadWeeks:2,safetyWeeks:1,orderMode:'B',subRecent:true,subRecentDays:7,round5:false,rgTargetDays:10,cost:{},warnQty:{},budget:500000,sizeMap:Object.assign({},DEF_SIZEMAP),sizeMapExceptions:{},applySizeMapAll:false,products:[],rgBoards:{},prodLinks:{},optLinks:{},history:[],vendors:[]};
 let S=JSON.parse(JSON.stringify(DEFAULT)),TAB='stock';
 const UI={};
 const $=s=>document.querySelector(s);
@@ -370,6 +370,7 @@ async function load(){
   if(S.rgTargetDays==null)S.rgTargetDays=10;if(!S.cost)S.cost={};if(!S.warnQty)S.warnQty={};if(S.budget==null)S.budget=500000;
   if(S.subRecent==null)S.subRecent=(S.orderSubtractPending!=null?S.orderSubtractPending:true);if(S.subRecentDays==null)S.subRecentDays=(S.hideRecentDays||7);
   if(S.round5==null)S.round5=false;
+  if(!S.vendors)S.vendors=[];
   S.products.forEach(normalize);ensureTypes();render();
 }
 
@@ -615,6 +616,7 @@ function renderStock(){if(!S.products.length)return `<div class="empty"><div cla
 /* ===== SUPPLIER ORDER ===== */
 let ORD={};
 let HISTTAB='all';
+let HIST_VENDOR_FILTER='all';
 const SEL={order:new Set(),rg:new Set()};
 let SEARCH={order:'',rg:''};
 const won=n=>'₩'+(n||0).toLocaleString('ko-KR');
@@ -666,7 +668,20 @@ function renderOrder(){
     ${selBar('order')}</div>`;
   return html;
 }
-function selBar(kind){const sel=SEL[kind];return `<div class="selbar"><span class="info">선택 <b>${sel.size}</b>개 · <span class="won" id="selwon-${kind}">${won(selSpent(kind))}</span></span><button class="btn ghost sm" data-selall="${kind}">전체선택</button><button class="btn blue sm" data-selrec="${kind}">📥 ${kind==='order'?'발주':'입고'} 기록 (선택/전체)</button></div>`;}
+function selBar(kind){
+  const sel=SEL[kind];
+  let extraHtml = '';
+  if (kind === 'order') {
+    const options = (S.vendors || []).map(v => `<option value="${v.replace(/"/g, '&quot;')}">${v}</option>`).join('');
+    extraHtml = `
+      <select id="sel-vendor-order" style="border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 13px; background: #fff; max-width: 140px; margin-right: 8px;">
+        <option value="">구매처 선택 안함</option>
+        ${options}
+      </select>
+    `;
+  }
+  return `<div class="selbar"><span class="info">선택 <b>${sel.size}</b>개 · <span class="won" id="selwon-${kind}">${won(selSpent(kind))}</span></span>${extraHtml}<button class="btn ghost sm" data-selall="${kind}">전체선택</button><button class="btn blue sm" data-selrec="${kind}">📥 ${kind==='order'?'발주':'입고'} 기록 (선택/전체)</button></div>`;
+}
 function selSpent(kind){let t=0;if(kind==='order'){const subMap=subMapNow();SEL.order.forEach(key=>{const [pid,k]=splitKey(key);const p=S.products.find(x=>x.id===pid);if(!p)return;const r=orderNeed(pid,k,subMap);const qty=(ORD[key]!=null)?ORD[key]:r;t+=qty*costOf(pid);});}else{SEL.rg.forEach(key=>{const [biz,idx]=[key.slice(0,key.lastIndexOf('|')),+key.slice(key.lastIndexOf('|')+1)];const it=S.rgBoards[biz]&&S.rgBoards[biz].items[idx];if(!it)return;const lk=resolveLink(it);t+=(it.send||0)*(lk.status==='ok'?costOf(lk.pid):0);});}return t;}
 function splitKey(key){const i=key.indexOf('|');return [key.slice(0,i),key.slice(i+1)];}
 function fmtDate(ms){if(!ms)return '';const d=new Date(ms);return `${d.getMonth()+1}/${d.getDate()}`;}
@@ -748,25 +763,72 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
     if (h.targetDays) {
       infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px;">🎯 목표 ${h.targetDays}일 기준</div>`;
     }
+  } else if (h.kind === 'order') {
+    const vendorLabel = h.vendor || '구매처 미지정';
+    infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px;">🏭 구매처: ${vendorLabel}</div>`;
   }
   const delRow=`<div class="hist-actions"><button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
   return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
 function monthKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
-function orderYearChart(){const m={};S.history.forEach(h=>{if(h.kind!=='order')return;const k=monthKey(h.ts);m[k]=(m[k]||0)+(h.spent||0);});
+function orderYearChart(filteredOrders){
+  const targetOrders = filteredOrders || S.history.filter(h=>h.kind==='order');
+  const m={};
+  targetOrders.forEach(h=>{
+    if(h.kind!=='order')return;
+    const k=monthKey(h.ts);
+    m[k]=(m[k]||0)+(h.spent||0);
+  });
   let keys=Object.keys(m).sort();if(!keys.length)return '';keys=keys.slice(-12);const max=Math.max(...keys.map(k=>m[k]),1);
   const bars=keys.map(k=>{const p=k.split('-');const h=Math.round(m[k]/max*100);return `<div class="bar-col"><div class="bar-val">${m[k]?(Math.round(m[k]/1000)+'k'):''}</div><div class="bar" style="height:${Math.max(3,h)}%" title="${won(m[k])}"></div><div class="bar-lab">${+p[1]}월</div></div>`;}).join('');
   const tot=keys.reduce((a,k)=>a+m[k],0);
-  return `<div class="card" style="margin-top:14px"><div class="card-head"><div class="pname">📊 월별 발주 지출</div><div class="psum"><span>최근 ${keys.length}개월 합계 <b>${won(tot)}</b></span></div></div><div class="chart">${bars}</div></div>`;}
+  let title = '📊 월별 발주 지출';
+  if (HIST_VENDOR_FILTER !== 'all') {
+    if (HIST_VENDOR_FILTER === 'unassigned') {
+      title = `📊 월별 발주 지출 (구매처 미지정)`;
+    } else {
+      title = `📊 월별 발주 지출 (${HIST_VENDOR_FILTER})`;
+    }
+  }
+  return `<div class="card" style="margin-top:14px"><div class="card-head"><div class="pname">${title}</div><div class="psum"><span>최근 ${keys.length}개월 합계 <b>${won(tot)}</b></span></div></div><div class="chart">${bars}</div></div>`;}
 function renderHist(){if(!S.history.length)return `<div class="empty"><div class="big">🧾</div><div style="font-weight:700;color:var(--ink)">기록이 없어요</div><div style="margin-top:6px">발주·입고를 기록하면 여기 쌓여요. 파일을 다시 올려도 기록은 안 지워져요.</div></div>`;
   const tab=HISTTAB;
   const btn=(id,lab)=>`<button class="histfil ${tab===id?'on':''}" data-histtab="${id}">${lab}</button>`;
   let html=`<div class="histfilbar">${btn('all','전체')}${btn('order','📦 발주')}${btn('rg','🚀 입고')}</div>`;
   if(tab==='all'){html+=`<div class="rg-banner" style="background:#eef6ee;color:var(--good);margin:0 0 12px">🔒 기록은 영구 보관돼요. 발주 도착하면 <b>입고완료 ✓</b>를 눌러주세요.</div>`+S.history.slice().reverse().map(histItemHTML).join('');return html;}
-  if(tab==='order'){const orders=S.history.filter(h=>h.kind==='order');if(!orders.length)return html+`<div class="empty"><div class="muted">발주 기록이 없어요.</div></div>`;
+  if(tab==='order'){
+    const allVendors = new Set(S.vendors || []);
+    S.history.forEach(h => {
+      if (h.kind === 'order' && h.vendor) {
+        allVendors.add(h.vendor);
+      }
+    });
+    const hasUnassigned = S.history.some(h => h.kind === 'order' && !h.vendor);
+    const vendorButtons = [];
+    vendorButtons.push(`<button class="histfil ${HIST_VENDOR_FILTER==='all'?'on':''}" data-vendorfilter="all">전체 구매처</button>`);
+    allVendors.forEach(v => {
+      vendorButtons.push(`<button class="histfil ${HIST_VENDOR_FILTER===v?'on':''}" data-vendorfilter="${v.replace(/"/g, '&quot;')}">${v}</button>`);
+    });
+    if (hasUnassigned) {
+      vendorButtons.push(`<button class="histfil ${HIST_VENDOR_FILTER==='unassigned'?'on':''}" data-vendorfilter="unassigned">구매처 미지정</button>`);
+    }
+    
+    html += `<div class="histfilbar" style="margin-top:-6px; margin-bottom:14px; flex-wrap:wrap; gap:6px;">${vendorButtons.join('')}</div>`;
+    
+    let orders = S.history.filter(h => h.kind === 'order');
+    if (HIST_VENDOR_FILTER !== 'all') {
+      if (HIST_VENDOR_FILTER === 'unassigned') {
+        orders = orders.filter(h => !h.vendor);
+      } else {
+        orders = orders.filter(h => h.vendor === HIST_VENDOR_FILTER);
+      }
+    }
+    
+    if(!orders.length) return html+`<div class="empty"><div class="muted">조건에 맞는 발주 기록이 없어요.</div></div>`;
+    
     const months={};orders.forEach(h=>{(months[monthKey(h.ts)]=months[monthKey(h.ts)]||[]).push(h);});
     Object.keys(months).sort().reverse().forEach(mk=>{const list=months[mk];const tot=list.reduce((a,h)=>a+(h.spent||0),0);const p=mk.split('-');
       html+=`<div class="month-head">${p[0]}년 ${+p[1]}월 <span class="mtot">총 ${won(tot)}</span></div>`+list.slice().reverse().map(histItemHTML).join('');});
-    html+=orderYearChart();return html;}
+    html+=orderYearChart(orders);return html;}
   // rg by biz
   const rgs=S.history.filter(h=>h.kind==='rg'||(h.title||'').indexOf('로켓그로스')>=0);if(!rgs.length)return html+`<div class="empty"><div class="muted">입고 기록이 없어요.</div></div>`;
   const groups={};rgs.forEach(h=>{const b=h.biz||'(판매처 미상)';(groups[b]=groups[b]||[]).push(h);});
@@ -796,6 +858,7 @@ $('#view').addEventListener('input',e=>{const t=e.target;
 });
 $('#view').addEventListener('click',e=>{const d=e.target.dataset;
   if(d.histtab){HISTTAB=d.histtab;render();return;}
+  if(d.vendorfilter){HIST_VENDOR_FILTER=d.vendorfilter;render();return;}
   if(d.recv){const h=S.history.find(x=>x.id===d.recv);if(h){h.received=true;h.recvDate=Date.now();save();toast('입고완료 처리됨 ✓');render();}return;}
   if(d.histdel){const h=S.history.find(x=>x.id===d.histdel);if(!h)return;
     const isRG=(h.title||'').indexOf('로켓그로스')>=0;
@@ -861,7 +924,9 @@ function recordSelected(kind){
     SEL.order.forEach(key=>{const a=splitKey(key);const pid=a[0],k=a[1];const p=S.products.find(x=>x.id===pid);if(!p)return;const q=(ORD[key]!=null)?ORD[key]:orderNeed(pid,k,subMap);if(q<=0)return;const parts=k.split('|');lines.push({label:p.name+' '+parts[1]+' '+parts[0],amt:q});items.push({pid,k,amt:q});totalQty+=q;spent+=q*costOf(pid);});
     if(!lines.length){toast('기록할 발주 수량이 없어요');return;}
     const eta=Date.now()+(S.leadWeeks||0)*7*DAY();
-    S.history.push({id:uid(),ts:Date.now(),kind:'order',received:false,eta,title:'\uD83D\uDCE6 공급처 발주',total:totalQty,spent,lines,items,note:lines.length+'개 옵션 · 금액 '+won(spent)});
+    const vendorEl = document.getElementById('sel-vendor-order');
+    const selectedVendor = vendorEl ? vendorEl.value : '';
+    S.history.push({id:uid(),ts:Date.now(),kind:'order',received:false,eta,title:'\uD83D\uDCE6 공급처 발주',total:totalQty,spent,lines,items,note:lines.length+'개 옵션 · 금액 '+won(spent),vendor:selectedVendor});
     SEL.order.forEach(key=>delete ORD[key]);SEL.order.clear();save();toast('발주 '+totalQty+'개 / '+won(spent)+' 기록됨 ✓ (도착예정 '+fmtDate(eta)+')');TAB='hist';render();return;
   }
   const sel=[...SEL.rg].map(key=>{const i=key.lastIndexOf('|');return {biz:key.slice(0,i),idx:+key.slice(i+1)};}).filter(x=>S.rgBoards[x.biz]&&S.rgBoards[x.biz].items[x.idx]);
@@ -1081,6 +1146,14 @@ function syncSettingsFromUI() {
       S.products.forEach(normalize);
     }
   }
+
+  // Rebuild S.vendors
+  const newVendors = [];
+  document.querySelectorAll('#vendorList .vendor-name').forEach(el => {
+    const val = el.textContent.trim();
+    if (val) newVendors.push(val);
+  });
+  S.vendors = newVendors;
 }
 
 function openSettings(){const types=S.channels.map(c=>`<div class="typetoggle"><span>${c}</span><span class="seg"><button data-c="${c}" data-t="fulfill" class="${isFulfill(c)?'on':''}">🚀 창고형</button><button data-c="${c}" data-t="central" class="${isFulfill(c)?'':'on'}">➡️ 직출고</button></span></div>`).join('');
@@ -1176,11 +1249,63 @@ function openSettings(){const types=S.channels.map(c=>`<div class="typetoggle"><
       <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:14px 0 2px">판매처 유형 (창고형=풀필먼트 재고 별도 / 직출고=내 창고 직출고)</div>
       <div id="typeList">${types||'<span class="muted" style="font-size:12.5px">판매 파일을 올리면 판매처가 나타나요.</span>'}</div>
       <label class="fld" style="margin-top:12px"><span>판매처 직접 수정 (쉼표 구분)</span><input id="chs" value="${S.channels.join(', ')}"></label>
+
+      <div style="font-size:12px;color:var(--ink-soft);font-weight:700;margin:18px 0 4px">🏢 구매처 목록 설정</div>
+      <div class="chips" id="vendorList" style="margin-bottom:8px">
+        ${(S.vendors || []).map(v => `
+          <span class="chip vendor-chip" style="display:inline-flex;align-items:center;gap:4px">
+            <span class="vendor-name">${v}</span>
+            <span class="vendor-del" style="cursor:pointer;color:var(--bad)">✕</span>
+          </span>
+        `).join('') || '<span class="muted" style="font-size:11.5px">등록된 구매처가 없습니다.</span>'}
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input id="newVendorInput" placeholder="새 구매처 이름 (예: 동대문 도매)" style="flex:1;border:1.5px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px">
+        <button class="btn ghost sm" id="vendorAddBtn">추가</button>
+      </div>
     </div>
     <div class="modal-foot"><button class="btn ghost" id="mc">취소</button><button class="btn clay" id="ms">저장</button></div></div></div>`;
 
   $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});
   $('#mc').onclick=closeModal;
+
+  const vendorListEl = $('#vendorList');
+  if (vendorListEl) {
+    vendorListEl.addEventListener('click', e => {
+      if (e.target.classList.contains('vendor-del')) {
+        e.target.closest('.vendor-chip').remove();
+        syncSettingsFromUI();
+        save();
+        openSettings();
+      }
+    });
+  }
+
+  const vendorAddBtnEl = $('#vendorAddBtn');
+  if (vendorAddBtnEl) {
+    vendorAddBtnEl.onclick = () => {
+      const v = $('#newVendorInput').value.trim();
+      if (v) {
+        syncSettingsFromUI();
+        if (!S.vendors) S.vendors = [];
+        if (!S.vendors.includes(v)) {
+          S.vendors.push(v);
+        }
+        save();
+        openSettings();
+      }
+    };
+  }
+
+  const newVendorInputEl = $('#newVendorInput');
+  if (newVendorInputEl) {
+    newVendorInputEl.onkeydown = e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        $('#vendorAddBtn').click();
+      }
+    };
+  }
   
   $('#typeList').addEventListener('click',e=>{
     const c=e.target.dataset.c,t=e.target.dataset.t;
