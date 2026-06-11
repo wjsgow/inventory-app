@@ -629,10 +629,10 @@ function rgRecommend(biz,item){const lk=resolveLink(item);let weekly=0,src='쿠�
   return {need:Math.max(0,Math.ceil((S.rgTargetDays/7)*weekly)-(item.stock||0)-(item.incoming||0)),weekly,src};}
 function costPanel(pids){if(!pids.length)return '';return `<div class="costpanel"><div class="t">상품별 원가 (1개당) — 입력하면 금액이 계산돼요</div>${pids.map(pid=>{const p=S.products.find(x=>x.id===pid);return `<span class="costrow">${p.name} <input class="cost-in" data-pid="${pid}" type="number" min="0" value="${costOf(pid)||''}" placeholder="0">원</span>`;}).join('')}</div>`;}
 function renderOrder(){
-  const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=S.orderMode==='B';const cmap=coupangStockMap();const budget=S.budget||0;const q=(SEARCH.order||'').trim();
+  const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=true;const cmap=coupangStockMap();const budget=S.budget||0;const q=(SEARCH.order||'').trim();
   const infoAll=pendingData().info;const subMap=subMapNow();
   let html=`<div class="rg-toolbar">
-    <span class="seg" style="background:var(--paper-2);border-radius:8px;padding:3px"><button data-omode="A" class="${!modeB?'on':''}" style="padding:6px 12px;border-radius:6px;font-weight:700;font-size:12.5px;background:${!modeB?'var(--card)':'transparent'};color:${!modeB?'var(--ink)':'var(--ink-soft)'}">A 내 창고만</button><button data-omode="B" class="${modeB?'on':''}" style="padding:6px 12px;border-radius:6px;font-weight:700;font-size:12.5px;background:${modeB?'var(--card)':'transparent'};color:${modeB?'var(--ink)':'var(--ink-soft)'}">B 내창고+쿠팡</button></span>
+    <span style="font-size:12.5px; font-weight:600; color:var(--ink-soft); display:inline-flex; align-items:center; gap:6px; background:var(--paper-2); padding:6px 12px; border-radius:8px;">ℹ️ 발주 기준: 내창고 + 쿠팡 재고 포함</span>
     <span class="target-row" style="margin:0">목표 <b style="font-family:var(--mono)">${tW}주</b>(리드<input id="o_lead" type="number" min="0" value="${S.leadWeeks}">+안전<input id="o_safe" type="number" min="0" value="${S.safetyWeeks}">)</span>
     <span class="target-row" style="margin:0">예산 <input id="o_budget" type="number" min="0" value="${budget||''}" placeholder="예:500000" style="width:90px">원</span>
     <div class="searchbox">🔍<input id="ord_search" placeholder="상품명 검색" value="${q.replace(/"/g,'&quot;')}"></div>
@@ -676,7 +676,7 @@ function DAY(){return 86400000;}
 function pendingData(recentDays){const qty={},info={};const now=Date.now();S.history.forEach(h=>{if(h.kind!=='order'||h.received||!h.items)return;const recent=(recentDays==null)||((now-h.ts)<=recentDays*DAY());h.items.forEach(it=>{const key=it.pid+'|'+it.k;if(recent)qty[key]=(qty[key]||0)+it.amt;const cur=info[key];if(!cur||h.ts>cur.ts)info[key]={ts:h.ts,amt:it.amt,eta:h.eta};});});return {qty,info};}
 function subMapNow(){return S.subRecent?pendingData(S.subRecentDays).qty:null;}
 /* 주별 예상 발주금액: 가진것+오는중을 기준으로, 매주 목표까지 채운다고 보고 판매속도대로 줄여가며 시뮬레이션 */
-function forecastSpend(weeksAhead){const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=S.orderMode==='B';const cmap=coupangStockMap();const pendAll=pendingData().qty;
+function forecastSpend(weeksAhead){const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=true;const cmap=coupangStockMap();const pendAll=pendingData().qty;
   const out=new Array(weeksAhead+1).fill(0);
   S.products.forEach(p=>{const c=costOf(p.id);if(!c)return;p.colors.forEach(co=>p.sizes.forEach(sz=>{const k=K(sz,co);const sk=p.sku[k];const weekly=totalSales(sk);if(weekly<=0)return;
     const cstk=modeB?((cmap[p.id]&&cmap[p.id][k])||0):0;const target=Math.ceil(tW*weekly)+warnQtyOf(p.id,k);
@@ -686,7 +686,7 @@ function forecastSpend(weeksAhead){const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);
   return out;}
 function rd5(n){return (S.round5&&n>0)?Math.ceil(n/5)*5:n;}
 function warnQtyOf(pid,k){return (S.warnQty&&S.warnQty[pid+'|'+k])||0;}
-function orderNeed(pid,k,subMap){const p=S.products.find(x=>x.id===pid);if(!p)return 0;const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=S.orderMode==='B';const cmap=coupangStockMap();const sk=p.sku[k];const weekly=totalSales(sk);const cstk=modeB?((cmap[pid]&&cmap[pid][k])||0):0;
+function orderNeed(pid,k,subMap){const p=S.products.find(x=>x.id===pid);if(!p)return 0;const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=true;const cmap=coupangStockMap();const sk=p.sku[k];const weekly=totalSales(sk);const cstk=modeB?((cmap[pid]&&cmap[pid][k])||0):0;
   const pq=subMap?((subMap[pid+'|'+k])||0):0;const wq=warnQtyOf(pid,k);
   return rd5(Math.max(0,Math.ceil(tW*weekly)-((sk.wh||0)+cstk-wq)-pq));}
 function daysPillW(w){const cls=w<1?'d0':(w<2?'d1':'d2');const t=w<10?w.toFixed(1):Math.round(w);return `<span class="days-pill ${cls}">${t}주</span>`;}
@@ -784,7 +784,6 @@ $('#view').addEventListener('input',e=>{const t=e.target;
   if(t.id==='rg_days'){S.rgTargetDays=Math.max(1,parseInt(t.value)||10);Object.entries(S.rgBoards).forEach(([bz,bd])=>(bd.items||[]).forEach(it=>{it.send=rgRecommend(bz,it).need;}));save();render();return;}
 });
 $('#view').addEventListener('click',e=>{const d=e.target.dataset;
-  if(d.omode){S.orderMode=d.omode;ORD={};save();render();return;}
   if(d.histtab){HISTTAB=d.histtab;render();return;}
   if(d.recv){const h=S.history.find(x=>x.id===d.recv);if(h){h.received=true;save();toast('입고완료 처리됨 ✓');render();}return;}
   if(d.histdel){const h=S.history.find(x=>x.id===d.histdel);if(!h)return;
