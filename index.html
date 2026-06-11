@@ -632,7 +632,7 @@ function renderOrder(){
   const tW=(S.leadWeeks||0)+(S.safetyWeeks||0);const modeB=true;const cmap=coupangStockMap();const budget=S.budget||0;const q=(SEARCH.order||'').trim();
   const infoAll=pendingData().info;const subMap=subMapNow();
   let html=`<div class="rg-toolbar">
-    <span style="font-size:12.5px; font-weight:600; color:var(--ink-soft); display:inline-flex; align-items:center; gap:6px; background:var(--paper-2); padding:6px 12px; border-radius:8px;">ℹ️ 발주 기준: 내창고 + 쿠팡 재고 포함</span>
+    <span style="font-size:12.5px; font-weight:600; color:var(--ink-soft); display:inline-flex; align-items:center; gap:6px; background:var(--paper-2); padding:6px 12px; border-radius:8px;">ℹ️ 발주 기준: 내창고 + 각 판매처 재고 포함</span>
     <span class="target-row" style="margin:0">목표 <b style="font-family:var(--mono)">${tW}주</b>(리드<input id="o_lead" type="number" min="0" value="${S.leadWeeks}">+안전<input id="o_safe" type="number" min="0" value="${S.safetyWeeks}">)</span>
     <span class="target-row" style="margin:0">예산 <input id="o_budget" type="number" min="0" value="${budget||''}" placeholder="예:500000" style="width:90px">원</span>
     <div class="searchbox">🔍<input id="ord_search" placeholder="상품명 검색" value="${q.replace(/"/g,'&quot;')}"></div>
