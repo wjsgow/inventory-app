@@ -695,11 +695,11 @@ function daysPillW(w){const cls=w<1?'d0':(w<2?'d1':'d2');const t=w<10?w.toFixed(
 function daysPill(d){if(d==null)return '<span class="muted">—</span>';const cls=d<=1?'d0':(d<=7?'d1':'d2');return `<span class="days-pill ${cls}">${d}일</span>`;}
 function renderRG(){
   const biz=Object.keys(S.rgBoards);const budget=S.budget||0;const q=(SEARCH.rg||'').trim();
-  let html=`<div class="rg-toolbar"><button class="btn blue" id="rgImp">📁 쿠팡 재고파일 올리기</button>
+  let html=`<div class="rg-toolbar">
     <span class="target-row" style="margin:0">목표 <input id="rg_days" type="number" min="1" value="${S.rgTargetDays}">일치</span>
     <span class="target-row" style="margin:0">예산 <input id="rg_budget" type="number" min="0" value="${budget||''}" placeholder="예:500000" style="width:90px">원</span>
     <div class="searchbox">🔍<input id="rg_search" placeholder="상품명 검색" value="${q.replace(/"/g,'&quot;')}"></div></div>`;
-  if(!biz.length)return html+`<div class="empty"><div class="big">🚀</div><div style="font-weight:700;color:var(--ink)">로켓그로스 보드가 없어요</div><div style="margin-top:6px">위 버튼으로 쿠팡 재고 파일을 올리면 옵션별 재고·소진일·추천입고가 떠요.</div></div>`;
+  if(!biz.length)return html+`<div class="empty"><div class="big">🚀</div><div style="font-weight:700;color:var(--ink)">창고형 재고 보드가 없어요</div><div style="margin-top:6px">왼쪽 위 [📁 파일 가져오기]로 창고형(판매처 보관) 파일을 올리면 옵션별 재고·소진일·추천입고가 떠요.</div></div>`;
   const linkedPids=new Set();biz.forEach(b=>(S.rgBoards[b].items||[]).forEach(it=>{const lk=resolveLink(it);if(lk.status==='ok')linkedPids.add(lk.pid);}));
   html+=costPanel([...linkedPids]);
   let cum=0,crossed=false;
@@ -762,8 +762,7 @@ function renderHist(){if(!S.history.length)return `<div class="empty"><div class
   return html;}
 
 function render(){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===TAB));renderAlerts();
-  $('#view').innerHTML=TAB==='stock'?renderStock():(TAB==='order'?renderOrder():(TAB==='rg'?renderRG():renderHist()));
-  if(TAB==='rg'){const b=$('#rgImp');if(b)b.onclick=()=>openImport('rg');}}
+  $('#view').innerHTML=TAB==='stock'?renderStock():(TAB==='order'?renderOrder():(TAB==='rg'?renderRG():renderHist()));}
 
 /* events */
 $('#view').addEventListener('input',e=>{const t=e.target;
