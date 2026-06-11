@@ -468,6 +468,29 @@ async function checkSession() {
     if (error) throw error;
     if (session) {
       currentUser = session.user;
+      
+      // 승인된 이메일 체크 (관리자 계정은 항상 통과)
+      if (currentUser.email !== 'onnnyy2@naver.com') {
+        try {
+          const { data: approved, error: appErr } = await supabaseClient
+            .from('approved_emails')
+            .select('email')
+            .eq('email', currentUser.email)
+            .maybeSingle();
+            
+          if (appErr || !approved || !approved.email || approved.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+            alert("이용 권한이 없습니다. 이용권 구매 후 관리자에게 가입한 이메일을 알려주세요.");
+            await logout();
+            return;
+          }
+        } catch (checkErr) {
+          console.error("승인 이메일 체크 에러:", checkErr);
+          alert("이용 권한이 없습니다. 이용권 구매 후 관리자에게 가입한 이메일을 알려주세요.");
+          await logout();
+          return;
+        }
+      }
+      
       $('#userEmailSpan').textContent = currentUser.email;
       $('#userProfileArea').style.display = 'block';
       
