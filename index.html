@@ -713,7 +713,7 @@ function renderRG(){
       const linkedPid=S.prodLinks[pn]||'';const sugg=linkedPid?'':suggestProduct(pn);
       const prodSel=`<select class="rg-prodsel" data-cp="${encodeURIComponent(pn)}"><option value="">— 내창고 상품 연결 —</option>${S.products.map(p=>`<option value="${p.id}" ${linkedPid===p.id?'selected':''}>${p.name}${sugg===p.id?' (추천)':''}</option>`).join('')}</select>`;
       body+=`<div class="pgroup">📦 쿠팡: ${pn} <span style="font-weight:600;font-size:12px;color:var(--ink-soft)">→</span> ${prodSel}</div>`;
-      body+=`<div class="matrixwrap" style="padding-top:0"><table class="rg-table"><thead><tr><th></th><th class="l">쿠팡 옵션</th><th>재고</th><th>입고예정</th><th>7일</th><th>소진</th><th>쿠팡<br>추천</th><th>우리<br>계산</th><th>보낼<br>수량</th><th>금액</th><th>누적</th><th class="l">내창고</th></tr></thead><tbody>`+
+      body+=`<div class="matrixwrap" style="padding-top:0"><table class="rg-table"><thead><tr><th></th><th class="l">쿠팡 옵션</th><th>재고</th><th>입고예정</th><th>7일</th><th>소진</th><th>판매처<br>추천</th><th>우리<br>계산</th><th>보낼<br>수량</th><th>금액</th><th>누적</th><th class="l">내창고</th></tr></thead><tbody>`+
         arr.map(it=>{const lk=resolveLink(it);let linkCell,c=0;
           if(lk.status==='ok'){const p=S.products.find(x=>x.id===lk.pid);const [sz,co]=lk.k.split('|');linkCell=`<span style="color:var(--good);font-weight:600">${co} ${sz} ✅</span>`;c=costOf(lk.pid);}
           else if(lk.status==='noprod'){linkCell=`<span class="muted">상품연결</span>`;}
@@ -724,7 +724,7 @@ function renderRG(){
         `</tbody></table></div>`;
     });
     html+=`<div class="card"><div class="card-head"><div><div class="pname">🚀 ${b}</div><div class="psum"><span>옵션 ${items.length}</span><span>가져온 시각 ${when}</span></div></div>
-      <div class="head-actions"><button class="linkbtn" data-rgcalc="${b}">우리계산 채우기</button><button class="linkbtn" data-rgfill="${b}">쿠팡추천</button><button class="linkbtn" data-rgdel="${b}">삭제</button></div></div>${body}</div>`;
+      <div class="head-actions"><button class="linkbtn" data-rgcalc="${b}">우리계산 채우기</button><button class="linkbtn" data-rgfill="${b}">판매처 추천</button><button class="linkbtn" data-rgdel="${b}">삭제</button></div></div>${body}</div>`;
   });
   html+=selBar('rg');
   return html;
