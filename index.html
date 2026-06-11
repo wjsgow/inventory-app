@@ -733,7 +733,11 @@ function renderRG(){
 function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;const lines=(h.lines||[]).map(l=>`<span>${l.label} +${l.amt}</span>`).join('');
   let etaRow='';
   if(h.kind==='order'){
-    if(h.received){etaRow=`<div class="eta-row done">✅ 입고완료됨 <button class="linkbtn" data-unrecv="${h.id}">되돌리기</button></div>`;}
+    if(h.received){
+      const dateStr = h.recvDate ? toDateInput(h.recvDate) : '';
+      const dateLabel = dateStr ? ` (${dateStr})` : '';
+      etaRow=`<div class="eta-row done">✅ 입고완료됨${dateLabel} <button class="linkbtn" data-unrecv="${h.id}">되돌리기</button></div>`;
+    }
     else{const overdue=h.eta&&now>(h.eta+2*DAY());
       etaRow=`<div class="eta-row ${overdue?'warn':''}">${overdue?'⚠ 도착예정 지남 — 확인 필요! ':'🕐 오는 중 · '}도착예정 <input class="eta-in" data-id="${h.id}" type="date" value="${toDateInput(h.eta)}"> <button class="btn blue sm" data-recv="${h.id}">입고완료 ✓</button></div>`;}
   }
@@ -784,7 +788,7 @@ $('#view').addEventListener('input',e=>{const t=e.target;
 });
 $('#view').addEventListener('click',e=>{const d=e.target.dataset;
   if(d.histtab){HISTTAB=d.histtab;render();return;}
-  if(d.recv){const h=S.history.find(x=>x.id===d.recv);if(h){h.received=true;save();toast('입고완료 처리됨 ✓');render();}return;}
+  if(d.recv){const h=S.history.find(x=>x.id===d.recv);if(h){h.received=true;h.recvDate=Date.now();save();toast('입고완료 처리됨 ✓');render();}return;}
   if(d.histdel){const h=S.history.find(x=>x.id===d.histdel);if(!h)return;
     const isRG=(h.title||'').indexOf('로켓그로스')>=0;
     const msg=isRG?'이 입고 기록을 삭제할까요?\n(창고에서 뺐던 수량을 되돌려요)':'이 발주 기록을 삭제할까요?\n(발주대기에서도 사라져요)';
@@ -792,7 +796,7 @@ $('#view').addEventListener('click',e=>{const d=e.target.dataset;
       if(isRG&&h.items){h.items.forEach(it=>{const p=S.products.find(x=>x.id===it.pid);if(p&&p.sku[it.k])p.sku[it.k].wh=(p.sku[it.k].wh||0)+it.amt;});}
       S.history=S.history.filter(x=>x.id!==d.histdel);save();toast('기록 삭제됨 (되돌림)');render();});
     return;}
-  if(d.unrecv){const h=S.history.find(x=>x.id===d.unrecv);if(h){h.received=false;save();render();}return;}
+  if(d.unrecv){const h=S.history.find(x=>x.id===d.unrecv);if(h){h.received=false;delete h.recvDate;save();render();}return;}
   if(d.selall){const kind=d.selall;document.querySelectorAll('[data-sel]').forEach(r=>SEL[kind].add(r.dataset.sel));save();render();return;}
   if(d.selrec){recordSelected(d.selrec);return;}
   const _row=e.target.closest&&e.target.closest('.selrow');
