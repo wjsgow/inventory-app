@@ -741,8 +741,14 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
     else{const overdue=h.eta&&now>(h.eta+2*DAY());
       etaRow=`<div class="eta-row ${overdue?'warn':''}">${overdue?'⚠ 도착예정 지남 — 확인 필요! ':'🕐 오는 중 · '}도착예정 <input class="eta-in" data-id="${h.id}" type="date" value="${toDateInput(h.eta)}"> <button class="btn blue sm" data-recv="${h.id}">입고완료 ✓</button></div>`;}
   }
+  let infoLabel = '';
+  if (h.kind === 'rg') {
+    const bizName = h.biz || '(판매처 미상)';
+    const targetLabel = h.targetDays ? ` · 목표 ${h.targetDays}일 기준` : '';
+    infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px;">🚚 판매처: ${bizName}${targetLabel}</div>`;
+  }
   const delRow=`<div class="hist-actions"><button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
-  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${h.title||h.productName}</div><div class="d">${h.note||''}</div></div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
+  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${h.title||h.productName}</div><div class="d">${h.note||''}</div>${infoLabel}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
 function monthKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function orderYearChart(){const m={};S.history.forEach(h=>{if(h.kind!=='order')return;const k=monthKey(h.ts);m[k]=(m[k]||0)+(h.spent||0);});
   let keys=Object.keys(m).sort();if(!keys.length)return '';keys=keys.slice(-12);const max=Math.max(...keys.map(k=>m[k]),1);
@@ -863,7 +869,7 @@ function recordSelected(kind){
     else{unlinked++;lines.push({label:it.opt.split(/\s*-\s*/)[0]+' (미연결)',amt:q});}});
   if(!lines.length){toast('기록할 입고 수량이 없어요');return;}
   const bizes=[...new Set(sel.map(o=>o.biz))].join(', ');
-  S.history.push({id:uid(),ts:Date.now(),kind:'rg',biz:bizes,title:'\uD83D\uDE80 로켓그로스 입고',total:totalQty,spent,lines,items,note:'창고차감 '+deducted+'개'+(unlinked?' · 미연결 '+unlinked+'개(차감X)':'')+' · 금액 '+won(spent)});
+  S.history.push({id:uid(),ts:Date.now(),kind:'rg',biz:bizes,title:'\uD83D\uDE80 로켓그로스 입고',targetDays:S.rgTargetDays,total:totalQty,spent,lines,items,note:'창고차감 '+deducted+'개'+(unlinked?' · 미연결 '+unlinked+'개(차감X)':'')+' · 금액 '+won(spent)});
   sel.forEach(o=>{S.rgBoards[o.biz].items[o.idx].send=0;});SEL.rg.clear();save();toast('입고 '+totalQty+'개 / '+won(spent)+' 기록됨 ✓');TAB='hist';render();}
 
 /* option/num parse */
