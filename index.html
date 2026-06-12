@@ -584,6 +584,7 @@ async function logout() {
   if (!proceed) return;
 
   sessionStorage.removeItem('fileLoaded');
+  sessionStorage.removeItem('visibleProductIds');
 
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
@@ -672,11 +673,16 @@ function renderOrder(){
     <label class="target-row" style="margin:0;cursor:pointer"><input type="checkbox" id="o_round5" ${S.round5?'checked':''} style="width:auto"> 발주수량 5단위로 올림</label>
     <span class="muted" style="font-size:12px">${S.subRecent?`켜짐 — 최근 ${S.subRecentDays}일 안에 발주한 건 그만큼 빼고 추천해요`:'꺼짐 — 발주대기 무시하고 추천해요'}</span>
   </div>`;
-  if(!sessionStorage.getItem('fileLoaded'))return html+`<div class="empty"><div class="big">📦</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px">먼저 📊 현황에서 재고·판매 파일을 올려주세요.</div></div>`;
-  if(!S.products.length)return html+`<div class="empty"><div class="big">📦</div><div style="font-weight:700;color:var(--ink)">데이터가 없어요</div><div style="margin-top:6px">먼저 📊 현황에서 재고·판매 파일을 올려주세요.</div></div>`;
+function renderStock(){if(!sessionStorage.getItem('fileLoaded'))return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;
+  const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
+  const filtered = S.products.filter(p => visible.has(p.id));
+  if(!filtered.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;
+  return filtered.map(cardHTML).join('');
+}
   // flatten
   let list=[];const pidsSet=new Set();const now=Date.now();
-  S.products.forEach(p=>{if(!matchSearch(productSearchText(p),q))return;p.colors.forEach(co=>p.sizes.forEach(sz=>{const k=K(sz,co);const sk=p.sku[k];const weekly=totalSales(sk);if(weekly<=0)return;
+  const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
+  S.products.forEach(p=>{if(!visible.has(p.id))return;if(!matchSearch(productSearchText(p),q))return;p.colors.forEach(co=>p.sizes.forEach(sz=>{const k=K(sz,co);const sk=p.sku[k];const weekly=totalSales(sk);if(weekly<=0)return;
     const key=p.id+'|'+k;const pinfo=infoAll[key];
     const cstk=modeB?((cmap[p.id]&&cmap[p.id][k])||0):0;const pq=subMap?((subMap[key])||0):0;const wq=warnQtyOf(p.id,k);const have=(sk.wh||0)+cstk;const need=rd5(Math.max(0,Math.ceil(tW*weekly)-(have-wq)-pq));if(need<=0)return;
     list.push({pid:p.id,pname:p.name,k,co,sz,weekly,wh:sk.wh||0,cstk,pq,wq,have,need,cover:(have+pq)/weekly,pinfo});pidsSet.add(p.id);}));});
@@ -1108,9 +1114,15 @@ async function runImport(){
   setImpMsg('가져오는 중…');
   try{
     const msgs=[];
-    if(IMP.stock){applyStock(IMP.stockRaw.slice(1),IMP.stockMap);msgs.push('재고('+(IMP.stockMap.dest==='wh'?'내 창고':IMP.stockMap.dest)+') ✓');}
-    if(IMP.sales){applySales(IMP.salesRaw.slice(1),{ch:IMP.salesMap.ch,name:IMP.salesMap.name,opt:IMP.salesMap.opt,qty:IMP.salesMap.qty,period:IMP.salesPeriod});msgs.push('판매처별 ✓('+IMP.salesPeriod+'주)');}
-    for(const c of IMP.coupang){const biz=c.biz==='__custom'?((c.bizCustom||'로켓그로스').trim()):c.biz;const raw=c.raw||cleanRaw(await parseRaw(c.file));const n=applyCoupangFile(raw,biz);msgs.push('창고형 '+biz+' '+n+'옵션');}
+    let visibleIds = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
+    if(IMP.stock){const r=applyStock(IMP.stockRaw.slice(1),IMP.stockMap);r.ps.forEach(id=>visibleIds.add(id));msgs.push('재고('+(IMP.stockMap.dest==='wh'?'내 창고':IMP.stockMap.dest)+') ✓');}
+    if(IMP.sales){const r=applySales(IMP.salesRaw.slice(1),{ch:IMP.salesMap.ch,name:IMP.salesMap.name,opt:IMP.salesMap.opt,qty:IMP.salesMap.qty,period:IMP.salesPeriod});r.ps.forEach(id=>visibleIds.add(id));msgs.push('판매처별 ✓('+IMP.salesPeriod+'주)');}
+    for(const c of IMP.coupang){
+      const biz=c.biz==='__custom'?((c.bizCustom||'로켓그로스').trim()):c.biz;const raw=c.raw||cleanRaw(await parseRaw(c.file));const n=applyCoupangFile(raw,biz);
+      (S.rgBoards[biz].items||[]).forEach(it=>{const lk=resolveLink(it);if(lk.status==='ok')visibleIds.add(lk.pid);});
+      msgs.push('창고형 '+biz+' '+n+'옵션');
+    }
+    sessionStorage.setItem('visibleProductIds', JSON.stringify([...visibleIds]));
     sessionStorage.setItem('fileLoaded', '1');
     save();render();closeModal();toast('가져오기 완료 — '+msgs.join(' · '));
   }catch(err){setImpMsg('읽기 오류: '+err.message,true);}
@@ -1118,7 +1130,7 @@ async function runImport(){
 
 function findOrCreateProduct(name){let p=S.products.find(x=>x.name===name);if(!p){p={id:uid(),name:name||'(이름없음)',sizes:[],colors:[],sku:{}};S.products.push(p);}return p;}
 function ensureSku(p,size,color){if(!p.sizes.includes(size)){p.sizes.push(size);p.sizes=sortSizes(p.sizes);}if(!p.colors.includes(color))p.colors.push(color);normalize(p);return p.sku[K(size,color)];}
-function applyStock(rows,m){let ps=new Set(),n=0,created=0;rows.forEach(r=>{const name=m.name>=0?String(r[m.name]||'').trim():'(이름없음)';const optRaw=m.opt>=0?String(r[m.opt]||'').trim():'';if(!optRaw&&!name)return;const {color,size: rawSize}=parseOpt(optRaw);const size = normalizeSize(rawSize, m.dest);const code=m.code>=0?String(r[m.code]||'').trim():'';const stock=m.stock>=0?num(r[m.stock]):0;const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;const sk=ensureSku(p,size,color);if(code)sk.code=code;if(m.dest==='wh')sk.wh=stock;else sk.ch[m.dest].stock=stock;ps.add(p.id);n++;});return{msg:`재고 가져오기 완료 — 상품 ${ps.size} · 옵션 ${n}${created?` (신규 ${created})`:''}`};}
+function applyStock(rows,m){let ps=new Set(),n=0,created=0;rows.forEach(r=>{const name=m.name>=0?String(r[m.name]||'').trim():'(이름없음)';const optRaw=m.opt>=0?String(r[m.opt]||'').trim():'';if(!optRaw&&!name)return;const {color,size: rawSize}=parseOpt(optRaw);const size = normalizeSize(rawSize, m.dest);const code=m.code>=0?String(r[m.code]||'').trim():'';const stock=m.stock>=0?num(r[m.stock]):0;const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;const sk=ensureSku(p,size,color);if(code)sk.code=code;if(m.dest==='wh')sk.wh=stock;else sk.ch[m.dest].stock=stock;ps.add(p.id);n++;});return{msg:`재고 가져오기 완료 — 상품 ${ps.size} · 옵션 ${n}${created?` (신규 ${created})`:''}`, ps};}
 function applySales(rows,m){const found=[...new Set(rows.map(r=>String(r[m.ch]||'').trim()).filter(Boolean))];
   const noData=!S.products.some(p=>sumTotalSales(p)>0);const isDefault=JSON.stringify(S.channels)===JSON.stringify(DEF_CH)&&noData;
   if(isDefault&&found.length){S.channels=found.slice();S.chType={};}else found.forEach(c=>{if(!S.channels.includes(c))S.channels.push(c);});
@@ -1126,7 +1138,7 @@ function applySales(rows,m){const found=[...new Set(rows.map(r=>String(r[m.ch]||
   const acc=new Map();let ps=new Set(),n=0,created=0;
   rows.forEach(r=>{const ch=String(r[m.ch]||'').trim();const name=String(r[m.name]||'').trim();const optRaw=String(r[m.opt]||'').trim();if(!ch||!optRaw)return;const {color,size: rawSize}=parseOpt(optRaw);const size = normalizeSize(rawSize, ch);const qty=num(r[m.qty]);const p=findOrCreateProduct(name);if(!p.sku[K(size,color)])created++;ensureSku(p,size,color);acc.set(p.id+'\u0001'+K(size,color)+'\u0001'+ch,(acc.get(p.id+'\u0001'+K(size,color)+'\u0001'+ch)||0)+qty);ps.add(p.id);n++;});
   for(const [key,sum] of acc){const [pid,k,ch]=key.split('\u0001');const p=S.products.find(x=>x.id===pid);if(p&&p.sku[k]&&p.sku[k].ch[ch])p.sku[k].ch[ch].sales=Math.round(sum/m.period);}
-  return{msg:`판매 가져오기 완료 — 판매처 ${found.length} · 상품 ${ps.size} · 항목 ${n}${created?` (신규옵션 ${created})`:''}`};}
+  return{msg:`판매 가져오기 완료 — 판매처 ${found.length} · 상품 ${ps.size} · 항목 ${n}${created?` (신규옵션 ${created})`:''}`, ps};}
 
 /* product / settings modals */
 function openProductModal(pid){const editing=!!pid;const p=editing?S.products.find(x=>x.id===pid):null;
