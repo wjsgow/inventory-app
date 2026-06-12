@@ -580,6 +580,40 @@ async function joinWorkspace() {
 }
 
 async function logout() {
+  const proceed = confirm("로그아웃 하시겠습니까?\n로그아웃 시 현재 화면의 재고/판매 수량이 초기화됩니다.\n(설정과 기록은 유지됩니다)");
+  if (!proceed) return;
+
+  // 1. 파일 업로드로 채워지는 데이터(재고/판매)만 초기화
+  S.rgBoards = {};
+  S.products.forEach(p => {
+    if (p.sku) {
+      Object.keys(p.sku).forEach(k => {
+        if (p.sku[k]) p.sku[k].wh = 0;
+        if (p.sku[k] && p.sku[k].ch) {
+          Object.keys(p.sku[k].ch).forEach(c => {
+            p.sku[k].ch[c].stock = 0;
+            p.sku[k].ch[c].sales = 0;
+          });
+        }
+      });
+    }
+  });
+
+  // 2. 초기화된 상태를 클라우드에 즉시 저장
+  if (supabaseClient && activeWorkspaceId) {
+    try {
+      await supabaseClient
+        .from('workspaces')
+        .update({ data: S, updated_at: new Date().toISOString() })
+        .eq('id', activeWorkspaceId);
+    } catch (e) {
+      console.error("로그아웃 데이터 초기화 저장 실패:", e);
+    }
+  } else {
+    localStorage.setItem(KEY, JSON.stringify(S));
+  }
+
+  // 3. 로그아웃 처리
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
   } else {
