@@ -640,7 +640,14 @@ function cardHTML(p){const u=uiOf(p);
     <div class="psum"><span>창고 <b>${sumWh(p)}</b></span><span>전체주간판매 <b>${sumTotalSales(p)}</b></span><span>옵션 ${p.sizes.length*p.colors.length}</span></div>
   </div><div class="head-actions"><button class="linkbtn" data-edit="${p.id}">✎ 편집</button></div></div>
   <div class="chtabs">${chtabs}</div>${modebar}${matrixHTML(p)}${foot}</div>`;}
-function renderStock(){if(!sessionStorage.getItem('fileLoaded'))return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;if(!S.products.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;return S.products.map(cardHTML).join('');}
+function renderStock(){
+  if(!sessionStorage.getItem('fileLoaded'))return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;
+  const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
+  const filtered = S.products.filter(p => visible.has(p.id));
+  if(!filtered.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;
+  filtered.sort((a,b)=>sumTotalSales(b)-sumTotalSales(a));
+  return filtered.map(cardHTML).join('');
+}
 
 /* ===== SUPPLIER ORDER ===== */
 let ORD={};
@@ -673,12 +680,8 @@ function renderOrder(){
     <label class="target-row" style="margin:0;cursor:pointer"><input type="checkbox" id="o_round5" ${S.round5?'checked':''} style="width:auto"> 발주수량 5단위로 올림</label>
     <span class="muted" style="font-size:12px">${S.subRecent?`켜짐 — 최근 ${S.subRecentDays}일 안에 발주한 건 그만큼 빼고 추천해요`:'꺼짐 — 발주대기 무시하고 추천해요'}</span>
   </div>`;
-function renderStock(){if(!sessionStorage.getItem('fileLoaded'))return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;
-  const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
-  const filtered = S.products.filter(p => visible.has(p.id));
-  if(!filtered.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;
-  return filtered.map(cardHTML).join('');
-}
+  if(!sessionStorage.getItem('fileLoaded'))return html+`<div class="empty"><div class="big">📦</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px">먼저 📊 현황에서 재고·판매 파일을 올려주세요.</div></div>`;
+  if(!S.products.length)return html+`<div class="empty"><div class="big">📦</div><div style="font-weight:700;color:var(--ink)">데이터가 없어요</div><div style="margin-top:6px">먼저 📊 현황에서 재고·판매 파일을 올려주세요.</div></div>`;
   // flatten
   let list=[];const pidsSet=new Set();const now=Date.now();
   const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
