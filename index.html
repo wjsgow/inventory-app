@@ -808,7 +808,15 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
   }
   const workerUsername = h.worker ? h.worker.split('@')[0] : '-';
   const workerRow = `<div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">🧑 작업자: ${workerUsername}</div>`;
-  const delRow=`<div class="hist-actions"><button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
+  let editOptBtn = '';
+  if (h.kind === 'order') {
+    if (h.received) {
+      editOptBtn = `<button class="linkbtn sm" onclick="toast('수정하려면 먼저 입고를 취소(되돌리기)하세요');" style="color:var(--ink-soft); cursor:not-allowed;">✏️ 옵션 수정 불가</button>`;
+    } else {
+      editOptBtn = `<button class="linkbtn sm" data-optedit="${h.id}">✏️ 옵션 수정</button>`;
+    }
+  }
+  const delRow=`<div class="hist-actions">${editOptBtn}<button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
   return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}${workerRow}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
 function monthKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function orderYearChart(filteredOrders){
@@ -919,6 +927,7 @@ $('#view').addEventListener('click',e=>{const d=e.target.dataset;
     });
     return;
   }
+  if(d.optedit){ openOrderEditModal(d.optedit); return; }
   if(d.selall){const kind=d.selall;document.querySelectorAll('[data-sel]').forEach(r=>SEL[kind].add(r.dataset.sel));save();render();return;}
   if(d.selrec){recordSelected(d.selrec);return;}
   const _row=e.target.closest&&e.target.closest('.selrow');
@@ -1164,6 +1173,80 @@ function openProductModal(pid){const editing=!!pid;const p=editing?S.products.fi
   $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});$('#mc').onclick=closeModal;
   $('#ms').onclick=()=>{const nm=$('#pn').value.trim();const sz=sortSizes($('#ps').value.split(',').map(x=>x.trim()).filter(Boolean));const co=$('#pc').value.split(',').map(x=>x.trim()).filter(Boolean);if(!sz.length||!co.length){toast('사이즈·색상을 입력하세요');return;}
     if(editing){const old=p.sku;p.name=nm;p.sizes=sz;p.colors=co;p.sku={};sz.forEach(a=>co.forEach(b=>{const k=K(a,b);p.sku[k]=old[k]||{code:'',wh:0,ch:{}};}));normalize(p);}else{const np={id:uid(),name:nm,sizes:sz,colors:co,sku:{}};normalize(np);S.products.push(np);}save();closeModal();TAB='stock';render();};}
+    
+function openOrderEditModal(id){
+  const h=S.history.find(x=>x.id===id);
+  if(!h||h.kind!=='order'||h.received) return;
+  let editItems = JSON.parse(JSON.stringify(h.items));
+  const pids=[...new Set(editItems.map(it=>it.pid))];
+  const drawItems = () => {
+    let rowsHtml = editItems.map((it, idx) => {
+      const p = S.products.find(x=>x.id===it.pid);
+      if(!p) return '';
+      const parts = it.k.split('|');
+      const label = `${p.name} ${parts[1]} ${parts[0]}`;
+      return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="font-size:13.5px; font-weight:600; flex:1;">${label}</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" class="optedit-amt" data-idx="${idx}" value="${it.amt}" min="0" style="width:60px; padding:4px;">
+          <button class="btn ghost sm optedit-del" data-idx="${idx}" style="color:var(--bad); padding:0 4px;">❌</button>
+        </div>
+      </div>`;
+    }).join('');
+    if(!editItems.length) rowsHtml = '<div class="muted">모든 항목이 삭제되었습니다. 저장하면 이 발주 기록의 내용이 비워집니다.</div>';
+    const addHtml = pids.map(pid => {
+      const p = S.products.find(x=>x.id===pid);
+      if(!p) return '';
+      const opts = [];
+      p.sizes.forEach(sz => p.colors.forEach(co => {
+        const k = K(sz,co);
+        if(!editItems.find(x => x.pid===pid && x.k===k)) opts.push(`<option value="${pid}|${k}">${p.name} ${co} ${sz}</option>`);
+      }));
+      if(!opts.length) return '';
+      return `<optgroup label="${p.name}">${opts.join('')}</optgroup>`;
+    }).join('');
+    const addRow = addHtml ? `<div style="margin-top:16px; display:flex; gap:6px;"><select id="optedit-addsel" style="flex:1; padding:4px; max-width: 250px;"><option value="">+ 다른 옵션 추가</option>${addHtml}</select><button class="btn ghost sm" id="optedit-addbtn">추가</button></div>` : '';
+    return rowsHtml + addRow;
+  };
+  const show = () => {
+    $('#modalRoot').innerHTML=`<div class="scrim" id="scrim"><div class="modal" style="max-width:400px; max-height:85vh; overflow-y:auto; display:flex; flex-direction:column;">
+      <div class="modal-head"><h3>발주 옵션/수량 수정</h3><p>수량을 0으로 변경하거나 ❌를 누르면 삭제됩니다.</p></div>
+      <div class="modal-body" id="optedit-body" style="overflow-y:auto; flex:1;">${drawItems()}</div>
+      <div class="modal-foot"><button class="btn ghost" id="optedit-cancel">취소</button><button class="btn clay" id="optedit-save">저장 및 재계산</button></div>
+    </div></div>`;
+    $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});
+    $('#optedit-cancel').onclick = closeModal;
+    document.querySelectorAll('.optedit-del').forEach(btn => btn.onclick = (e) => {
+      document.querySelectorAll('.optedit-amt').forEach(inp => editItems[+inp.dataset.idx].amt = Math.max(0, parseInt(inp.value) || 0));
+      editItems.splice(+e.currentTarget.dataset.idx, 1);
+      show();
+    });
+    const addBtn = document.getElementById('optedit-addbtn');
+    if(addBtn) addBtn.onclick = () => {
+      document.querySelectorAll('.optedit-amt').forEach(inp => editItems[+inp.dataset.idx].amt = Math.max(0, parseInt(inp.value) || 0));
+      const sel = document.getElementById('optedit-addsel').value;
+      if(!sel) return;
+      const [pid, sz, co] = sel.split('|');
+      editItems.push({pid, k: sz+'|'+co, amt: 1});
+      show();
+    };
+    $('#optedit-save').onclick = () => {
+      document.querySelectorAll('.optedit-amt').forEach(inp => editItems[+inp.dataset.idx].amt = Math.max(0, parseInt(inp.value) || 0));
+      h.items = editItems.filter(it => it.amt > 0);
+      let totalQty=0, spent=0; const lines = [];
+      h.items.forEach(it => {
+        const p = S.products.find(x=>x.id===it.pid);
+        if(!p) return;
+        totalQty += it.amt; spent += it.amt * costOf(it.pid);
+        const parts = it.k.split('|'); lines.push({label: p.name+' '+parts[1]+' '+parts[0], amt: it.amt});
+      });
+      h.lines = lines; h.total = totalQty; h.spent = spent;
+      h.note = lines.length ? (lines.length>3 ? lines.slice(0,3).map(x=>x.label).join(', ')+' 외 '+(lines.length-3)+'건' : lines.map(x=>x.label).join(', ')) : '항목 없음';
+      save(); toast('발주 옵션이 수정되었습니다.'); closeModal(); render();
+    };
+  };
+  show();
+}
 function syncSettingsFromUI() {
   const twEl = $('#tw'), wwEl = $('#ww'), miEl = $('#mi');
   if (twEl) S.targetWeeks = Math.max(1, parseInt(twEl.value) || 4);
