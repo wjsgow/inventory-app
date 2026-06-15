@@ -750,7 +750,6 @@ function renderRG(){
   const biz=Object.keys(S.rgBoards);const budget=S.budget||0;const q=(SEARCH.rg||'').trim();
   let html=`<div class="rg-toolbar">
     <span class="target-row" style="margin:0">목표 <input id="rg_days" type="number" min="1" value="${S.rgTargetDays}">일치</span>
-    <span class="target-row" style="margin:0">예산 <input id="rg_budget" type="number" min="0" value="${budget||''}" placeholder="예:500000" style="width:90px">원</span>
     <div class="searchbox">🔍<input id="rg_search" placeholder="상품명 검색" value="${q.replace(/"/g,'&quot;')}"></div></div>`;
   if(!sessionStorage.getItem('fileLoaded'))return html+`<div class="empty"><div class="big">🚀</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px">왼쪽 위 [📁 파일 가져오기]로 창고형(판매처 보관) 파일을 올려주세요.</div></div>`;
   if(!biz.length)return html+`<div class="empty"><div class="big">🚀</div><div style="font-weight:700;color:var(--ink)">창고형 재고 보드가 없어요</div><div style="margin-top:6px">왼쪽 위 [📁 파일 가져오기]로 창고형(판매처 보관) 파일을 올리면 옵션별 재고·소진일·추천입고가 떠요.</div></div>`;
@@ -773,8 +772,7 @@ function renderRG(){
           else if(lk.status==='noprod'){linkCell=`<span class="muted">상품연결</span>`;}
           else{const p=S.products.find(x=>x.id===lk.pid);linkCell=`<span style="color:var(--bad);font-weight:600">⚠</span> <select class="rg-optsel" data-sku="${encodeURIComponent(it.sku)}" data-pid="${lk.pid}"><option value="">선택</option>${p.sizes.map(sz=>p.colors.map(co=>`<option value="${sz}|${co}">${co} ${sz}</option>`).join('')).join('')}</select>`;}
           const rc=rgRecommend(b,it);const key=b+'|'+it.idx;const seld=SEL.rg.has(key);const amt=(it.send||0)*c;cum+=amt;
-          let line='';if(budget>0&&!crossed&&cum>budget){crossed=true;line=`<tr class="budgetline"><td colspan="12">──── 여기까지 예산 ${won(budget)} 초과 (위까지 ${won(cum-amt)}) ────</td></tr>`;}
-          return `<tr class="selrow ${seld?'sel':''} ${it.days!=null&&it.days<=1?'urgent':''}" data-sel="${key}"><td class="selcell" data-selcell="${key}">${seld?'☑':'☐'}</td><td class="l">${it.opt}</td><td>${it.stock}</td><td class="muted">${it.incoming||0}</td><td>${it.sales7||0}</td><td>${daysPill(it.days)}</td><td class="muted">${it.rec||0}</td><td style="color:var(--blue);font-weight:700">${rc.need}</td><td><input class="rg-in" data-biz="${b}" data-idx="${it.idx}" type="number" min="0" value="${it.send||0}" style="width:50px"></td><td class="amt">${c?won(amt):'-'}</td><td class="cum">${c?won(cum):'-'}</td><td class="l">${linkCell}</td></tr>`+line;}).join('')+
+          return `<tr class="selrow ${seld?'sel':''} ${it.days!=null&&it.days<=1?'urgent':''}" data-sel="${key}"><td class="selcell" data-selcell="${key}">${seld?'☑':'☐'}</td><td class="l">${it.opt}</td><td>${it.stock}</td><td class="muted">${it.incoming||0}</td><td>${it.sales7||0}</td><td>${daysPill(it.days)}</td><td class="muted">${it.rec||0}</td><td style="color:var(--blue);font-weight:700">${rc.need}</td><td><input class="rg-in" data-biz="${b}" data-idx="${it.idx}" type="number" min="0" value="${it.send||0}" style="width:50px"></td><td class="amt">${c?won(amt):'-'}</td><td class="cum">${c?won(cum):'-'}</td><td class="l">${linkCell}</td></tr>`;}).join('')+
         `</tbody></table></div>`;
     });
     html+=`<div class="card"><div class="card-head"><div><div class="pname">🚀 ${b}</div><div class="psum"><span>옵션 ${items.length}</span><span>가져온 시각 ${when}</span></div></div>
