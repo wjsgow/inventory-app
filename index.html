@@ -165,16 +165,31 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
 .pm-opt{font-size:12px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:4px}
 .pm-opt input{width:56px;font-family:var(--mono);border:1.5px solid var(--line);border-radius:7px;padding:3px 6px;text-align:right}
 .muted{color:var(--ink-soft)}
-.intro-screen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(95% 65% at 18% 0%,#fcd9f4 0%,transparent 55%),radial-gradient(85% 65% at 100% 8%,#d4e1ff 0%,transparent 55%),linear-gradient(160deg,#f7ecfb 0%,#efeafe 40%,#e8f0ff 72%,#e6fbff 100%);transition:opacity .5s ease,visibility .5s ease}
+.intro-screen{position:fixed;inset:0;z-index:200;display:block;overflow-y:auto;overflow-x:hidden;background:radial-gradient(95% 65% at 18% 0%,#fcd9f4 0%,transparent 55%),radial-gradient(85% 65% at 100% 8%,#d4e1ff 0%,transparent 55%),linear-gradient(160deg,#f7ecfb 0%,#efeafe 40%,#e8f0ff 72%,#e6fbff 100%);transition:opacity .5s ease,visibility .5s ease}
 .intro-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
-.intro-inner{text-align:center;max-width:560px;animation:introUp .7s cubic-bezier(.2,.7,.2,1)}
+.intro-container{max-width:800px;margin:0 auto;padding:80px 24px 120px;display:flex;flex-direction:column;gap:120px;}
+.intro-hero{text-align:center;animation:introUp .7s cubic-bezier(.2,.7,.2,1);min-height:75vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .intro-kicker{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--clay);font-weight:700;background:#fff;border:1px solid var(--line);padding:6px 15px;border-radius:999px;box-shadow:0 8px 22px -12px rgba(124,92,252,.55);margin-bottom:22px}
-.intro-title{font-size:clamp(31px,7.5vw,48px);font-weight:800;letter-spacing:-.03em;margin:0 0 16px;line-height:1.12;background:linear-gradient(118deg,#1c1832 0%,#5b3fd6 48%,#c057b8 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.intro-sub{font-size:clamp(14px,3.6vw,17px);color:var(--ink-soft);margin:0 0 32px;line-height:1.55}
-.intro-btn{font-family:var(--sans);font-size:16px;font-weight:700;color:#fff;border:none;cursor:pointer;padding:15px 36px;border-radius:999px;background:linear-gradient(135deg,#8b6bff,#6f4bf2);box-shadow:0 16px 36px -10px rgba(124,92,252,.7);transition:.18s}
+.intro-title{font-size:clamp(24px,5vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 12px;color:var(--ink-soft);}
+.intro-hook{font-size:clamp(36px,8vw,56px);font-weight:900;letter-spacing:-.03em;margin:0 0 24px;line-height:1.2;background:linear-gradient(118deg,#1c1832 0%,#5b3fd6 48%,#c057b8 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.intro-sub{font-size:clamp(15px,4vw,19px);color:var(--ink-soft);margin:0 0 40px;line-height:1.6;max-width:600px;}
+.intro-btn{font-family:var(--sans);font-size:18px;font-weight:800;color:#fff;border:none;cursor:pointer;padding:18px 42px;border-radius:999px;background:linear-gradient(135deg,#8b6bff,#6f4bf2);box-shadow:0 16px 36px -10px rgba(124,92,252,.7);transition:.18s}
 .intro-btn:hover{transform:translateY(-2px);box-shadow:0 20px 44px -10px rgba(124,92,252,.82)}
 .intro-btn:active{transform:translateY(0)}
+.intro-scroll-down{margin-top:60px;color:var(--ink-soft);font-size:24px;animation:bounce 2s infinite;}
+.intro-section{text-align:center;}
+.intro-section h2{font-size:clamp(28px,6vw,38px);font-weight:800;color:var(--ink);margin-bottom:32px;}
+.intro-pain-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:16px;max-width:500px;margin:0 auto;text-align:left;}
+.intro-pain-list li{background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);backdrop-filter:blur(10px);padding:20px 24px;border-radius:16px;font-size:16px;font-weight:600;color:var(--ink);box-shadow:0 8px 24px -12px rgba(0,0,0,0.05);display:flex;align-items:center;gap:12px;}
+.intro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;text-align:left;}
+.intro-card{background:rgba(255,255,255,0.65);border:1px solid rgba(255,255,255,0.9);backdrop-filter:blur(10px);padding:32px 28px;border-radius:24px;box-shadow:0 12px 32px -16px rgba(124,92,252,0.15);transition:.2s;}
+.intro-card:hover{transform:translateY(-4px);background:rgba(255,255,255,0.8);}
+.intro-card h3{font-size:20px;font-weight:800;color:var(--ink);margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+.intro-card p{font-size:15px;color:var(--ink-soft);line-height:1.6;margin:0;}
+.intro-cta{background:linear-gradient(135deg,#1c1832,#3a258a);padding:60px 24px;border-radius:32px;color:#fff;box-shadow:0 24px 48px -12px rgba(28,24,50,0.5);}
+.intro-cta h2{color:#fff;margin-bottom:32px;}
 @keyframes introUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes bounce{0%,20%,50%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}60%{transform:translateY(-5px)}}
 .login-screen{position:fixed;inset:0;z-index:201;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(95% 65% at 18% 0%,#fcd9f4 0%,transparent 55%),radial-gradient(85% 65% at 100% 8%,#d4e1ff 0%,transparent 55%),linear-gradient(160deg,#f7ecfb 0%,#efeafe 40%,#e8f0ff 72%,#e6fbff 100%);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s ease,visibility .45s ease}
 .login-screen.show{opacity:1;visibility:visible;pointer-events:auto}
 .login-card{width:100%;max-width:400px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px 30px;box-shadow:0 34px 74px -28px rgba(40,28,90,.5);animation:introUp .55s cubic-bezier(.2,.7,.2,1)}
@@ -201,11 +216,52 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
 </style>
 
 <div class="intro-screen" id="introScreen">
-  <div class="intro-inner">
-    <div class="intro-kicker">STOCK OPS · 재고 관리</div>
-    <h1 class="intro-title">재고 발주·입고 관리</h1>
-    <p class="intro-sub">창고·판매 모니터링, 입고 수량 예측, 품절 상태까지 한 곳에서.</p>
-    <button class="intro-btn" id="introStart">시작하기 →</button>
+  <div class="intro-container">
+    <div class="intro-hero">
+      <div class="intro-kicker">STOCK OPS · 재고 관리</div>
+      <div class="intro-title">재고 발주·입고 관리</div>
+      <h1 class="intro-hook">아직도 감으로<br>주문하세요?</h1>
+      <p class="intro-sub">오늘 미리 몇 개 사야 할지, 쿠팡 로켓배송에 몇 개 넣어야 품절 안 날지 — 자동으로 계산해드려요.</p>
+      <button class="intro-btn intro-start-btn" id="introStart">시작하기 →</button>
+      <div class="intro-scroll-down">↓</div>
+    </div>
+    
+    <div class="intro-section">
+      <h2>이런 적 없으세요?</h2>
+      <ul class="intro-pain-list">
+        <li><span>🤔</span> 로켓창고에 수량, 그냥 감으로 넣으시나요?</li>
+        <li><span>📅</span> 다음 주에 얼마나 미리 사야 판매할 수 있는지 아세요?</li>
+        <li><span>🎨</span> 어떤 색상이 많이 팔리는지 아세요?</li>
+        <li><span>📦</span> 쿠팡그로스·로켓배송·지그재그·아마존 — 어디에 몇 개씩 넣어야 할지 아세요?</li>
+      </ul>
+    </div>
+
+    <div class="intro-section">
+      <h2>이렇게 해결해드려요</h2>
+      <div class="intro-grid">
+        <div class="intro-card">
+          <h3>📦 발주 자동 계산</h3>
+          <p>판매 속도로 지금 몇 개 사야 할지 계산해 줍니다.</p>
+        </div>
+        <div class="intro-card">
+          <h3>🚀 판매처 입고 추천</h3>
+          <p>로켓그로스 등에 며칠치 몇 개 보낼지 알아서 추천합니다.</p>
+        </div>
+        <div class="intro-card">
+          <h3>📊 색상별 현황</h3>
+          <p>뭐가 잘 팔리고 뭐가 품절 임박인지 색깔로 한눈에 파악하세요.</p>
+        </div>
+        <div class="intro-card">
+          <h3>🧾 기록 관리</h3>
+          <p>발주·입고 내역 자동 저장, 팀 작업자 기록으로 실수를 줄이세요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="intro-section intro-cta">
+      <h2>감으로 하던 발주, 이제 숫자로.</h2>
+      <button class="intro-btn intro-start-btn" style="background:#fff; color:#5b3fd6; box-shadow:0 8px 24px rgba(255,255,255,0.2);">시작하기 →</button>
+    </div>
   </div>
 </div>
 <div class="login-screen" id="loginScreen">
@@ -1746,7 +1802,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  if(startBtn)startBtn.addEventListener('click',showLogin);
+  document.querySelectorAll('.intro-start-btn').forEach(btn => btn.addEventListener('click', showLogin));
   if(loginBtn)loginBtn.addEventListener('click',tryAuth);
   if(backBtn)backBtn.addEventListener('click',backToIntro);
   function onEnter(e){if(e.key==='Enter'){e.preventDefault();tryAuth();}}
