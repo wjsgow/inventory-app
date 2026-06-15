@@ -223,6 +223,8 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
     
     <div class="login-field"><label>이메일</label><input id="loginId" type="email" autocomplete="username" placeholder="example@email.com"></div>
     <div class="login-field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호"></div>
+    <div class="login-field" id="signupNameField" style="display:none;"><label>이름</label><input id="loginName" type="text" placeholder="홍길동"></div>
+    <div class="login-field" id="signupPhoneField" style="display:none;"><label>담당자 핸드폰번호</label><input id="loginPhone" type="text" placeholder="010-1234-5678"></div>
     
     <button class="login-btn" id="loginBtn">로그인</button>
     
@@ -503,9 +505,11 @@ async function checkSession() {
       if (profErr && profErr.code !== 'PGRST116') throw profErr;
       
       if (!profile) {
+        const pName = currentUser.user_metadata?.name || null;
+        const pPhone = currentUser.user_metadata?.phone || null;
         const { error: insErr } = await supabaseClient
           .from('profiles')
-          .insert({ id: currentUser.id, email: currentUser.email });
+          .insert({ id: currentUser.id, email: currentUser.email, name: pName, phone: pPhone });
         if (insErr) throw insErr;
         showWorkspaceSelection();
       } else if (!profile.workspace_id) {
@@ -1636,6 +1640,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (authSub) authSub.textContent = '계정 정보를 입력하고 들어오세요.';
     if (loginBtn) loginBtn.textContent = '로그인';
     if (err) err.textContent = '';
+    const nf = document.getElementById('signupNameField'); if(nf) nf.style.display = 'none';
+    const pf = document.getElementById('signupPhoneField'); if(pf) pf.style.display = 'none';
   });
   
   if (tabSignup) tabSignup.addEventListener('click', () => {
@@ -1646,6 +1652,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (authSub) authSub.textContent = '새로운 계정을 만들고 재고를 관리하세요.';
     if (loginBtn) loginBtn.textContent = '회원가입';
     if (err) err.textContent = '';
+    const nf = document.getElementById('signupNameField'); if(nf) nf.style.display = 'block';
+    const pf = document.getElementById('signupPhoneField'); if(pf) pf.style.display = 'block';
   });
 
   // Google Sign In
@@ -1693,9 +1701,21 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (err) err.textContent = '처리 중...';
     try {
       if (isSignupMode) {
+        const nameIn = document.getElementById('loginName');
+        const phoneIn = document.getElementById('loginPhone');
+        const name = (nameIn ? nameIn.value : '').trim();
+        const phone = (phoneIn ? phoneIn.value : '').trim();
+        if(!name || !phone) {
+          if(err) err.textContent = '이름과 담당자 핸드폰번호를 입력해주세요.';
+          if(card){card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake');}
+          return;
+        }
         const { data, error: signUpErr } = await supabaseClient.auth.signUp({
           email: email,
-          password: pw
+          password: pw,
+          options: {
+            data: { name: name, phone: phone }
+          }
         });
         if (signUpErr) throw signUpErr;
         
