@@ -920,11 +920,12 @@ $('#view').addEventListener('click',e=>{const d=e.target.dataset;
   if(d.vedit){const h=S.history.find(x=>x.id===d.vedit);if(!h)return;
     const vendorOpts=(S.vendors||[]).map(v=>`<option value="${v.replace(/"/g,'&quot;')}" ${h.vendor===v?'selected':''}>${v}</option>`).join('');
     const selectHtml=`<select id="vedit-sel" style="margin-top:10px; width:100%; border:1.5px solid var(--line); border-radius:8px; padding:6px 8px;"><option value="">구매처 미지정(선택 안함)</option>${vendorOpts}</select>`;
+    let selectedVal = h.vendor || '';
     showConfirm(`기록의 구매처를 변경합니다.<br>${selectHtml}`,()=>{
-      const newVal=document.getElementById('vedit-sel').value;
-      if(newVal) h.vendor=newVal; else delete h.vendor;
+      if(selectedVal) h.vendor=selectedVal; else delete h.vendor;
       save();toast('구매처가 변경되었습니다.');render();
     });
+    document.getElementById('vedit-sel').onchange = e => selectedVal = e.target.value;
     return;
   }
   if(d.optedit){ openOrderEditModal(d.optedit); return; }
