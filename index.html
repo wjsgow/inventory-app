@@ -804,7 +804,7 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
     }
   } else if (h.kind === 'order') {
     const vendorLabel = h.vendor || '구매처 미지정';
-    infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px;">🏭 구매처: ${vendorLabel}</div>`;
+    infoLabel = `<div style="font-size:12px; color:var(--clay); font-weight:700; margin-top:2px; display:flex; align-items:center; gap:8px;">🏭 구매처: <span id="vlabel-${h.id}">${vendorLabel}</span> <button class="linkbtn sm" data-vedit="${h.id}">✏️ 변경</button></div>`;
   }
   const workerUsername = h.worker ? h.worker.split('@')[0] : '-';
   const workerRow = `<div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">🧑 작업자: ${workerUsername}</div>`;
@@ -909,6 +909,16 @@ $('#view').addEventListener('click',e=>{const d=e.target.dataset;
       S.history=S.history.filter(x=>x.id!==d.histdel);save();toast('기록 삭제됨 (되돌림)');render();});
     return;}
   if(d.unrecv){const h=S.history.find(x=>x.id===d.unrecv);if(h){h.received=false;delete h.recvDate;save();render();}return;}
+  if(d.vedit){const h=S.history.find(x=>x.id===d.vedit);if(!h)return;
+    const vendorOpts=(S.vendors||[]).map(v=>`<option value="${v.replace(/"/g,'&quot;')}" ${h.vendor===v?'selected':''}>${v}</option>`).join('');
+    const selectHtml=`<select id="vedit-sel" style="margin-top:10px; width:100%; border:1.5px solid var(--line); border-radius:8px; padding:6px 8px;"><option value="">구매처 미지정(선택 안함)</option>${vendorOpts}</select>`;
+    showConfirm(`기록의 구매처를 변경합니다.<br>${selectHtml}`,()=>{
+      const newVal=document.getElementById('vedit-sel').value;
+      if(newVal) h.vendor=newVal; else delete h.vendor;
+      save();toast('구매처가 변경되었습니다.');render();
+    });
+    return;
+  }
   if(d.selall){const kind=d.selall;document.querySelectorAll('[data-sel]').forEach(r=>SEL[kind].add(r.dataset.sel));save();render();return;}
   if(d.selrec){recordSelected(d.selrec);return;}
   const _row=e.target.closest&&e.target.closest('.selrow');
