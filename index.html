@@ -578,11 +578,17 @@ async function checkSession() {
         await load();
       }
     } else {
-      showAuthScreen();
+      const intro = $('#introScreen');
+      if (intro && intro.classList.contains('hide')) {
+        showAuthScreen();
+      }
     }
   } catch(e) {
     console.error("세션 체크 실패:", e);
-    showAuthScreen();
+    const intro = $('#introScreen');
+    if (intro && intro.classList.contains('hide')) {
+      showAuthScreen();
+    }
   }
 }
 
@@ -1634,7 +1640,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         activeWorkspaceId = null;
         $('#userProfileArea').style.display = 'none';
         $('#workspaceInfoArea').style.display = 'none';
-        showAuthScreen();
+        const intro = $('#introScreen');
+        if (intro && intro.classList.contains('hide')) {
+          showAuthScreen();
+        }
       }
     });
     // Check initial session
