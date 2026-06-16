@@ -537,14 +537,18 @@ async function checkSession() {
             .maybeSingle();
             
           if (appErr || !approved || !approved.email || approved.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+            sessionStorage.removeItem('fileLoaded');
+            sessionStorage.removeItem('visibleProductIds');
+            await supabaseClient.auth.signOut();
             openUsageModal();
-            await logout();
             return;
           }
         } catch (checkErr) {
           console.error("승인 이메일 체크 에러:", checkErr);
+          sessionStorage.removeItem('fileLoaded');
+          sessionStorage.removeItem('visibleProductIds');
+          await supabaseClient.auth.signOut();
           openUsageModal();
-          await logout();
           return;
         }
       }
