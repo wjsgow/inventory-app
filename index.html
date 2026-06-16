@@ -537,13 +537,13 @@ async function checkSession() {
             .maybeSingle();
             
           if (appErr || !approved || !approved.email || approved.email.toLowerCase() !== currentUser.email.toLowerCase()) {
-            alert("이용 권한이 없습니다. 이용권 구매 후 관리자에게 가입한 이메일을 알려주세요.");
+            openUsageModal();
             await logout();
             return;
           }
         } catch (checkErr) {
           console.error("승인 이메일 체크 에러:", checkErr);
-          alert("이용 권한이 없습니다. 이용권 구매 후 관리자에게 가입한 이메일을 알려주세요.");
+          openUsageModal();
           await logout();
           return;
         }
@@ -1038,6 +1038,47 @@ function openProducts(){const q=(PSEARCH||'').trim();
 $('#prodBtn').addEventListener('click',openProducts);
 $('#impBtn').addEventListener('click',()=>openImport());
 function closeModal(){$('#modalRoot').innerHTML='';}
+function openUsageModal() {
+  $('#modalRoot').innerHTML = `
+    <div class="scrim" id="scrim">
+      <div class="modal" style="max-width:440px; border-radius:16px; overflow:hidden;">
+        <div class="modal-head" style="background: linear-gradient(135deg, #fcd9f4 0%, #d4e1ff 100%); padding: 20px; border-bottom: none;">
+          <h3 style="margin:0; font-size:20px; color:var(--ink); text-align:center;">💳 StockFit 이용 안내</h3>
+        </div>
+        <div class="modal-body" style="padding: 24px; font-family: var(--sans);">
+          <div style="font-size:16px; font-weight:700; color:var(--clay); margin-bottom:12px; text-align:center;">
+            ✨ 이용료: 월 29,000원
+          </div>
+          
+          <div style="background: var(--paper-2); padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; border: 1.5px solid var(--line);">
+            <div style="font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px; text-align:center;">💡 제공 기능</div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--ink-soft); line-height: 1.6; text-align: left;">
+              <li>재고 발주 · 입고 자동 계산</li>
+              <li>모든 판매처 통합 관리</li>
+              <li>팀원과 데이터 함께 공유/사용 가능</li>
+            </ul>
+          </div>
+          
+          <p style="font-size:13.5px; color:var(--ink); line-height:1.6; text-align:center; margin:0 0 24px;">
+            이용을 원하시면 카톡으로 문의주세요!<br>문의 주시면 결제 방법과 이용 방법을 안내해드려요.
+          </p>
+          
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <a href="https://open.kakao.com/o/s164HGzi" target="_blank" class="btn clay" style="text-align:center; text-decoration:none; display:block; padding:12px; font-size:14px; font-weight:700; color:#fff;">
+              💬 카톡 문의하기
+            </a>
+            <button class="btn ghost" id="usageCloseBtn" style="width:100%; padding:10px; font-size:13.5px; cursor:pointer;">
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeModal(); });
+  const closeBtn = $('#usageCloseBtn');
+  if (closeBtn) closeBtn.onclick = closeModal;
+}
 let _toastT=null;
 function toast(msg){let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.textContent=msg;el.classList.add('show');clearTimeout(_toastT);_toastT=setTimeout(()=>el.classList.remove('show'),2200);}
 function showConfirm(msg,onYes){$('#modalRoot').innerHTML=`<div class="scrim" id="scrim"><div class="modal" style="max-width:380px"><div class="modal-head"><p style="font-size:14.5px;color:var(--ink);white-space:pre-line">${msg}</p></div><div class="modal-foot"><button class="btn ghost" id="cfno">취소</button><button class="btn clay" id="cfyes">확인</button></div></div></div>`;$('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')closeModal();});$('#cfno').onclick=closeModal;$('#cfyes').onclick=()=>{closeModal();onYes();};}
@@ -1792,6 +1833,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           if(err) err.textContent = '';
           alert("회원가입 성공! 이메일 인증 메일의 링크를 클릭한 후 로그인해주세요. (테스트 환경이라면 Supabase Auth 설정에서 'Confirm email'을 끄시면 바로 로그인됩니다.)");
           if (tabLogin) tabLogin.click();
+          openUsageModal();
         }
       } else {
         const { data, error: signInErr } = await supabaseClient.auth.signInWithPassword({
