@@ -213,6 +213,263 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
 .auth-tab.active{color:var(--clay);border-color:var(--clay)}
 .google-btn{background:#fff;color:var(--ink);border:1.5px solid var(--line);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;font-weight:600;font-family:var(--sans);cursor:pointer;border-radius:12px;padding:12px;font-size:14px;transition:.16s;display:none;/* 구글 로그인 사용 시 이 display:none; 제거 */}
 .google-btn:hover{background:#faf9ff;border-color:var(--clay);transform:translateY(-1px)}
+
+/* Mockup Section styles */
+.mockup-intro-section {
+  padding: 60px 0;
+  text-align: center;
+}
+.mockup-intro-section h2 {
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.mockup-intro-section .subtitle {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 36px;
+}
+.mockup-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.browser-mockup {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 30px 60px -15px rgba(28,20,55,0.12);
+  width: 100%;
+  max-width: 460px;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.browser-header {
+  background: #f1eefa;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.browser-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.browser-dot.red { background: #ff5f56; }
+.browser-dot.yellow { background: #ffbd2e; }
+.browser-dot.green { background: #27c93f; }
+.browser-title {
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--ink-soft);
+}
+.browser-body {
+  padding: 20px;
+  background: #fff;
+  font-size: 12.5px;
+}
+.mockup-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--clay);
+  font-weight: 700;
+  font-size: 13px;
+  animation: floatArrow 2.5s ease-in-out infinite;
+}
+.mockup-arrow svg {
+  width: 36px;
+  height: 36px;
+  fill: currentColor;
+}
+.mockup-badge {
+  background: linear-gradient(135deg, #fcd9f4 0%, #d4e1ff 100%);
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 99px;
+  box-shadow: 0 4px 12px -4px rgba(124,92,252,0.3);
+  white-space: nowrap;
+}
+@keyframes floatArrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+@media (max-width: 990px) {
+  .mockup-container {
+    flex-direction: column;
+  }
+  .mockup-arrow {
+    transform: rotate(90deg);
+    animation: floatArrowV 2.5s ease-in-out infinite;
+  }
+  @keyframes floatArrowV {
+    0%, 100% { transform: rotate(90deg) translateX(0); }
+    50% { transform: rotate(90deg) translateX(6px); }
+  }
+}
+/* Step 1 Mockup Details */
+.mock-zone-card {
+  background: #fcfbfe;
+  border: 1.5px solid #efeaff;
+  border-radius: 12px;
+  padding: 11px 14px;
+  margin-bottom: 12px;
+}
+.mock-zone-title {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mock-zone-sub {
+  font-size: 10px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.mock-drop {
+  border: 1.5px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  font-size: 11px;
+  background: #fff;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.mock-drop.uploaded {
+  border-color: #c8ead9;
+  background: #f4fbf8;
+  color: var(--good);
+  font-weight: 600;
+}
+.mock-drop .check-icon {
+  color: var(--good);
+  font-weight: bold;
+}
+/* Step 2 Mockup Details */
+.mock-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.mock-result-table th {
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-align: right;
+  padding: 6px 8px;
+  border-bottom: 1.5px solid var(--line);
+  white-space: nowrap;
+}
+.mock-result-table th.l { text-align: left; }
+.mock-result-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #f3f0ff;
+  text-align: right;
+  font-family: var(--mono);
+}
+.mock-result-table td.l {
+  text-align: left;
+  font-family: var(--sans);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.mock-result-table td.brand {
+  color: var(--ink-soft);
+  font-size: 9.5px;
+  font-weight: normal;
+}
+.mock-result-table td.input-cell {
+  padding: 3px 8px;
+}
+.mock-result-table td input {
+  font-family: var(--mono);
+  font-size: 11px;
+  width: 36px;
+  text-align: center;
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  padding: 2px;
+}
+.mock-badge-zero {
+  color: #a8a2c4;
+}
+.mock-badge-warn {
+  color: var(--bad);
+  background: #ffe9ec;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+.mock-badge-good {
+  color: var(--good);
+  background: #e7f7ef;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+.mock-summary-bar {
+  background: #fff;
+  border-top: 1.5px solid var(--line);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.mock-summary-bar .info {
+  font-weight: 700;
+}
+.mock-summary-bar .won {
+  font-family: var(--mono);
+  color: var(--clay);
+  font-weight: 800;
+}
+.mock-summary-bar .mock-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: #5b3fd6;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(91, 63, 214, 0.3);
+}
+.mock-alert-banner {
+  background: #e7f7ef;
+  color: var(--good);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 8px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 </style>
 
 <div class="intro-screen" id="introScreen">
@@ -234,6 +491,155 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
         <li><span>🎨</span> 어떤 색상이 많이 팔리는지 아세요?</li>
         <li><span>📦</span> 쿠팡그로스·로켓배송·지그재그·아마존 — 어디에 몇 개씩 넣어야 할지 아세요?</li>
       </ul>
+    </div>
+
+    <div class="mockup-intro-section">
+      <h2>파일만 넣으면, 수량이 자동으로 계산돼요</h2>
+      <div class="subtitle">가지고 계신 파일(창고 재고, 최근 판매량)을 드래그해서 넣기만 하세요.</div>
+      
+      <div class="mockup-container">
+        <!-- Step 1: File Import Mockup -->
+        <div class="browser-mockup">
+          <div class="browser-header">
+            <span class="browser-dot red"></span>
+            <span class="browser-dot yellow"></span>
+            <span class="browser-dot green"></span>
+            <span class="browser-title">파일 가져오기</span>
+          </div>
+          <div class="browser-body">
+            <div style="font-weight:800; font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              📁 파일 가져오기
+            </div>
+            <div style="font-size:11px; color:var(--ink-soft); margin-bottom:14px;">
+              아래 3가지 파일을 넣고 <strong style="color:var(--ink)">한 번에 가져오기</strong>를 누르세요. 필요한 것만 넣어도 돼요.
+            </div>
+            
+            <!-- Zone 1 -->
+            <div class="mock-zone-card">
+              <div class="mock-zone-title">📦 총재고 수량 파일</div>
+              <div class="mock-zone-sub">지금 내 창고에 있는 전체 재고 수량 파일을 넣어주세요.</div>
+              <div class="mock-drop uploaded">
+                <span class="check-icon">✓</span> stock_20260617.xlsx
+              </div>
+            </div>
+            
+            <!-- Zone 2 -->
+            <div class="mock-zone-card">
+              <div class="mock-zone-title">🛒 판매처별 수량 파일</div>
+              <div class="mock-zone-sub">각 판매처에서 판매된 수량을 알 수 있는 파일을 넣어주세요.</div>
+              <div class="mock-drop uploaded">
+                <span class="check-icon">✓</span> sales_all_channels.xlsx
+              </div>
+            </div>
+            
+            <!-- Zone 3 -->
+            <div class="mock-zone-card" style="margin-bottom:16px;">
+              <div class="mock-zone-title">🚚 창고형(판매처 보관) 파일</div>
+              <div class="mock-zone-sub">판매처 창고에 보관 중인 재고 파일을 넣어주세요. (여러 개 가능)</div>
+              <div class="mock-drop uploaded">
+                <span class="check-icon">✓</span> fulfillment_stock.xlsx
+              </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+              <button class="btn ghost" style="font-size:11px; padding:6px 12px; border-radius:6px; cursor:default;" onclick="return false;">닫기</button>
+              <button class="btn teal" style="font-size:11px; padding:6px 12px; border-radius:6px; background:#00b0ff; border-color:#00b0ff; cursor:default;" onclick="return false;">한 번에 가져오기</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Connection Arrow -->
+        <div class="mockup-arrow">
+          <div class="mockup-badge">⚡ 1초 자동 계산</div>
+          <svg viewBox="0 0 24 24">
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+          </svg>
+        </div>
+        
+        <!-- Step 2: Results Mockup -->
+        <div class="browser-mockup">
+          <div class="browser-header">
+            <span class="browser-dot red"></span>
+            <span class="browser-dot yellow"></span>
+            <span class="browser-dot green"></span>
+            <span class="browser-title">발주 관리 시스템</span>
+          </div>
+          <div class="browser-body" style="padding: 16px 12px 12px 12px;">
+            <table class="mock-result-table">
+              <thead>
+                <tr>
+                  <th class="l">상품명</th>
+                  <th>창고재고</th>
+                  <th>판매량</th>
+                  <th>발주경고</th>
+                  <th>권장발주</th>
+                  <th>예상단가</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="l">
+                    나시 반팔<br>
+                    <span class="brand">핑크 80</span>
+                  </td>
+                  <td>3</td>
+                  <td>0</td>
+                  <td class="mock-badge-zero">0.0주</td>
+                  <td class="input-cell"><input type="text" value="9" disabled></td>
+                  <td>₩24,000</td>
+                </tr>
+                <tr>
+                  <td class="l">
+                    남성목장갑<br>
+                    <span class="brand">블랙 75</span>
+                  </td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td class="mock-badge-zero">0.0주</td>
+                  <td class="input-cell"><input type="text" value="3" disabled></td>
+                  <td>₩24,000</td>
+                </tr>
+                <tr>
+                  <td class="l">
+                    남성목장갑<br>
+                    <span class="brand">블랙 80</span>
+                  </td>
+                  <td>3</td>
+                  <td>0</td>
+                  <td class="mock-badge-zero">0.0주</td>
+                  <td class="input-cell"><input type="text" value="9" disabled></td>
+                  <td>₩72,000</td>
+                </tr>
+                <tr>
+                  <td class="l">
+                    신상 아동복 반팔티7748<br>
+                    <span class="brand">화이트 75</span>
+                  </td>
+                  <td>3</td>
+                  <td>8</td>
+                  <td><span class="mock-badge-good">2.7주</span></td>
+                  <td class="input-cell"><input type="text" value="1" disabled></td>
+                  <td>₩8,000</td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <!-- Summary Bar -->
+            <div class="mock-summary-bar">
+              <div class="info">
+                선택 6개 · <span class="won">₩224,000</span>
+              </div>
+              <button class="mock-btn" onclick="return false;" style="cursor:default;">📥 발주 기록 (선택/전체)</button>
+            </div>
+            
+            <!-- Alert Banner -->
+            <div class="mock-alert-banner">
+              ✅ 변경사항이 클라우드에 성공적으로 자동 저장되었습니다.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="intro-section">
