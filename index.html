@@ -1252,6 +1252,7 @@ let HISTTAB='all';
 let HIST_VENDOR_FILTER='all';
 const SEL={order:new Set(),rg:new Set()};
 let SEARCH={order:'',rg:''};
+let showCheckedOnlyOrder = false;
 const won=n=>'₩'+(n||0).toLocaleString('ko-KR');
 function costOf(pid){return (S.cost&&S.cost[pid])||0;}
 function matchSearch(name,q){q=(q||'').trim();if(!q)return true;const terms=q.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);if(!terms.length)return true;return terms.some(t=>String(name).includes(t));}
@@ -1275,6 +1276,7 @@ function renderOrder(){
   <div class="rg-toolbar" style="margin-top:-6px">
     <label class="target-row" style="margin:0;cursor:pointer"><input type="checkbox" id="o_sub" ${S.subRecent?'checked':''} style="width:auto"> 최근 <input id="o_subdays" type="number" min="1" value="${S.subRecentDays}" style="width:46px">일 이내 발주한 옵션 수량 빼기</label>
     <label class="target-row" style="margin:0;cursor:pointer"><input type="checkbox" id="o_round5" ${S.round5?'checked':''} style="width:auto"> 발주수량 5단위로 올림</label>
+    <label class="target-row" style="margin:0;cursor:pointer"><input type="checkbox" id="o_checked_only" ${showCheckedOnlyOrder?'checked':''} style="width:auto"> ☑ 체크한 것만 보기</label>
     <span class="muted" style="font-size:12px">${S.subRecent?`켜짐 — 최근 ${S.subRecentDays}일 안에 발주한 건 그만큼 빼고 추천해요`:'꺼짐 — 발주대기 무시하고 추천해요'}</span>
   </div>`;
   if(!sessionStorage.getItem('fileLoaded'))return html+`<div class="empty"><div class="big">📦</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px">먼저 📊 현황에서 재고·판매 파일을 올려주세요.</div></div>`;
@@ -1283,7 +1285,9 @@ function renderOrder(){
   let list=[];const pidsSet=new Set();const now=Date.now();
   const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
   S.products.forEach(p=>{if(!visible.has(p.id))return;if(!matchSearch(productSearchText(p),q))return;p.colors.forEach(co=>p.sizes.forEach(sz=>{const k=K(sz,co);const sk=p.sku[k];const weekly=totalSales(sk);if(weekly<=0)return;
-    const key=p.id+'|'+k;const pinfo=infoAll[key];
+    const key=p.id+'|'+k;
+    if(showCheckedOnlyOrder && !SEL.order.has(key))return;
+    const pinfo=infoAll[key];
     const cstk=modeB?((cmap[p.id]&&cmap[p.id][k])||0):0;const pq=subMap?((subMap[key])||0):0;const wq=warnQtyOf(p.id,k);const have=(sk.wh||0)+cstk;const need=rd5(Math.max(0,Math.ceil(tW*weekly)-(have-wq)-pq));if(need<=0)return;
     list.push({pid:p.id,pname:p.name,k,co,sz,weekly,wh:sk.wh||0,cstk,pq,wq,have,need,cover:(have+pq)/weekly,pinfo});pidsSet.add(p.id);}));});
   list.sort((a,b)=>a.cover-b.cover);
@@ -1291,7 +1295,7 @@ function renderOrder(){
   const fc=forecastSpend(4);const nowSpend=list.reduce((a,r)=>a+r.need*costOf(r.pid),0);
   const anyCost=[...pidsSet].some(pid=>costOf(pid)>0);
   if(anyCost)html+=`<div class="costpanel" style="background:#f3f0fb;border-color:#d9cef0"><div class="t">📅 주별 예상 발주금액 <span style="font-weight:400">— 지금 판매속도가 유지된다고 볼 때 (원가 입력된 상품만)</span></div><div style="display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:13.5px"><span>지금 <b style="color:var(--clay)">${won(nowSpend)}</b></span><span style="color:var(--ink-soft)">|</span><span>다음주 <b>${won(fc[1])}</b></span><span>2주후 <b>${won(fc[2])}</b></span><span>3주후 <b>${won(fc[3])}</b></span><span>4주후 <b>${won(fc[4])}</b></span></div></div>`;
-  if(!list.length)return html+`<div class="empty"><div class="muted">${q?'검색 결과가 없어요.':'지금 발주가 필요한 옵션이 없어요.'}</div></div>`;
+  if(!list.length)return html+`<div class="empty"><div class="muted">${q?'검색 결과가 없어요.':(showCheckedOnlyOrder?'체크한 상품이 없어요.':'지금 발주가 필요한 옵션이 없어요.')}</div></div>`;
   let cum=0,crossed=false,rows='';
   list.forEach(r=>{const key=r.pid+'|'+r.k;const qty=(ORD[key]!=null)?ORD[key]:r.need;const c=costOf(r.pid);const amt=qty*c;cum+=amt;
     const seld=SEL.order.has(key);
@@ -1540,6 +1544,7 @@ $('#view').addEventListener('change',e=>{const t=e.target;
   if(t.classList.contains('rg-optsel')){const sku=decodeURIComponent(t.dataset.sku);if(t.value)S.optLinks[sku]={pid:t.dataset.pid,k:t.value};else delete S.optLinks[sku];save();render();return;}
   if(t.id==='o_sub'){S.subRecent=t.checked;ORD={};save();render();return;}
   if(t.id==='o_round5'){S.round5=t.checked;ORD={};save();render();return;}
+  if(t.id==='o_checked_only'){showCheckedOnlyOrder=t.checked;render();return;}
   if(t.classList.contains('eta-in')){const h=S.history.find(x=>x.id===t.dataset.id);if(h&&t.value){const p=t.value.split('-');h.eta=new Date(+p[0],+p[1]-1,+p[2],12,0,0).getTime();save();render();}return;}
   if(t.classList.contains('ord-in')||t.classList.contains('rg-in')||t.classList.contains('cost-in')||t.id==='ord_search'||t.id==='rg_search'||t.id==='o_budget'||t.id==='rg_budget'){render();return;}
 });
