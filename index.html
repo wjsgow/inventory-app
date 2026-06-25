@@ -558,84 +558,89 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
         </div>
         
         <!-- Step 2: Results Mockup -->
-        <div class="browser-mockup">
-          <div class="browser-header">
-            <span class="browser-dot red"></span>
-            <span class="browser-dot yellow"></span>
-            <span class="browser-dot green"></span>
-            <span class="browser-title">발주 관리 시스템</span>
+        <div style="display: flex; flex-direction: column; gap: 24px; align-items: center;">
+          <div class="mockup-question-title" style="margin: 0; font-size: clamp(18px, 4vw, 22px); font-weight: 800; color: var(--ink); text-align: center;">
+            얼마나 사야 하지?
           </div>
-          <div class="browser-body" style="padding: 16px 12px 12px 12px;">
-            <table class="mock-result-table">
-              <thead>
-                <tr>
-                  <th class="l">상품명</th>
-                  <th>창고재고</th>
-                  <th>판매량</th>
-                  <th>발주경고</th>
-                  <th>권장발주</th>
-                  <th>예상단가</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="l">
-                    나시 반팔<br>
-                    <span class="brand">핑크 80</span>
-                  </td>
-                  <td>3</td>
-                  <td>0</td>
-                  <td class="mock-badge-zero">0.0주</td>
-                  <td class="input-cell"><input type="text" value="9" disabled></td>
-                  <td>₩24,000</td>
-                </tr>
-                <tr>
-                  <td class="l">
-                    남성목장갑<br>
-                    <span class="brand">블랙 75</span>
-                  </td>
-                  <td>1</td>
-                  <td>0</td>
-                  <td class="mock-badge-zero">0.0주</td>
-                  <td class="input-cell"><input type="text" value="3" disabled></td>
-                  <td>₩24,000</td>
-                </tr>
-                <tr>
-                  <td class="l">
-                    남성목장갑<br>
-                    <span class="brand">블랙 80</span>
-                  </td>
-                  <td>3</td>
-                  <td>0</td>
-                  <td class="mock-badge-zero">0.0주</td>
-                  <td class="input-cell"><input type="text" value="9" disabled></td>
-                  <td>₩72,000</td>
-                </tr>
-                <tr>
-                  <td class="l">
-                    신상 아동복 반팔티7748<br>
-                    <span class="brand">화이트 75</span>
-                  </td>
-                  <td>3</td>
-                  <td>8</td>
-                  <td><span class="mock-badge-good">2.7주</span></td>
-                  <td class="input-cell"><input type="text" value="1" disabled></td>
-                  <td>₩8,000</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <!-- Summary Bar -->
-            <div class="mock-summary-bar">
-              <div class="info">
-                선택 6개 · <span class="won">₩224,000</span>
-              </div>
-              <button class="mock-btn" onclick="return false;" style="cursor:default;">📥 발주 기록 (선택/전체)</button>
+          <div class="browser-mockup">
+            <div class="browser-header">
+              <span class="browser-dot red"></span>
+              <span class="browser-dot yellow"></span>
+              <span class="browser-dot green"></span>
+              <span class="browser-title">발주 관리 시스템</span>
             </div>
-            
-            <!-- Alert Banner -->
-            <div class="mock-alert-banner">
-              ✅ 변경사항이 클라우드에 성공적으로 자동 저장되었습니다.
+            <div class="browser-body" style="padding: 16px 12px 12px 12px;">
+              <table class="mock-result-table">
+                <thead>
+                  <tr>
+                    <th class="l">상품명</th>
+                    <th>창고재고</th>
+                    <th>판매량</th>
+                    <th>발주경고</th>
+                    <th>권장발주</th>
+                    <th>예상단가</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="l">
+                      나시 반팔<br>
+                      <span class="brand">핑크 80</span>
+                    </td>
+                    <td>3</td>
+                    <td>0</td>
+                    <td class="mock-badge-zero">0.0주</td>
+                    <td class="input-cell"><input type="text" value="9" disabled></td>
+                    <td>₩24,000</td>
+                  </tr>
+                  <tr>
+                    <td class="l">
+                      남성목장갑<br>
+                      <span class="brand">블랙 75</span>
+                    </td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td class="mock-badge-zero">0.0주</td>
+                    <td class="input-cell"><input type="text" value="3" disabled></td>
+                    <td>₩24,000</td>
+                  </tr>
+                  <tr>
+                    <td class="l">
+                      남성목장갑<br>
+                      <span class="brand">블랙 80</span>
+                    </td>
+                    <td>3</td>
+                    <td>0</td>
+                    <td class="mock-badge-zero">0.0주</td>
+                    <td class="input-cell"><input type="text" value="9" disabled></td>
+                    <td>₩72,000</td>
+                  </tr>
+                  <tr>
+                    <td class="l">
+                      신상 아동복 반팔티7748<br>
+                      <span class="brand">화이트 75</span>
+                    </td>
+                    <td>3</td>
+                    <td>8</td>
+                    <td><span class="mock-badge-good">2.7주</span></td>
+                    <td class="input-cell"><input type="text" value="1" disabled></td>
+                    <td>₩8,000</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <!-- Summary Bar -->
+              <div class="mock-summary-bar">
+                <div class="info">
+                  선택 6개 · <span class="won">₩224,000</span>
+                </div>
+                <button class="mock-btn" onclick="return false;" style="cursor:default;">📥 발주 기록 (선택/전체)</button>
+              </div>
+              
+              <!-- Alert Banner -->
+              <div class="mock-alert-banner">
+                ✅ 변경사항이 클라우드에 성공적으로 자동 저장되었습니다.
+              </div>
             </div>
           </div>
         </div>
