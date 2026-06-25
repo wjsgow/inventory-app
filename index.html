@@ -725,6 +725,42 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
           </div>
         </div>
       </div>
+
+      <!-- 질문 문구 3 (팀 공유) -->
+      <div class="mockup-question-title" style="margin: 48px 0 24px; font-size: clamp(18px, 4vw, 22px); font-weight: 800; color: var(--ink); text-align: center;">
+        혼자 다 못 하죠? 직원과 함께 쓰세요
+      </div>
+
+      <!-- Step 4: Workspace sharing mockup container -->
+      <div class="mockup-container" style="margin-top: 0;">
+        <div class="browser-mockup" style="max-width: 440px;">
+          <div class="browser-header">
+            <span class="browser-dot red"></span>
+            <span class="browser-dot yellow"></span>
+            <span class="browser-dot green"></span>
+            <span class="browser-title">워크스페이스 함께 쓰기</span>
+          </div>
+          <div class="browser-body" style="padding: 24px; background: #fff;">
+            <div class="login-kicker" style="margin-bottom: 8px;">StockFit</div>
+            <h2 class="login-title" style="margin: 0 0 6px; font-size: 20px;">워크스페이스 선택</h2>
+            <p class="login-sub" style="margin-bottom: 20px; font-size: 12.5px;">재고 데이터를 함께 공유할 워크스페이스를 생성하거나, 동료의 워크스페이스 코드를 입력해 참가하세요.</p>
+            
+            <button class="login-btn" style="margin-bottom:14px; width:100%; cursor:default; background: linear-gradient(135deg, #8b6bff, #6f4bf2); box-shadow: 0 10px 24px rgba(124,92,252,0.4);" onclick="return false;">🆕 새 워크스페이스 만들기</button>
+            
+            <div style="background: var(--paper-2); padding: 10px 12px; border-radius: 8px; font-size: 11px; color: var(--ink-soft); text-align: center; border: 1px solid var(--line); margin-bottom: 16px;">
+              💡 동료에게 코드를 공유하면 같은 재고 데이터를 함께 봐요
+            </div>
+            
+            <div style="border-top:1.5px solid var(--line); padding-top: 16px;">
+              <div class="login-field" style="margin-bottom: 10px;">
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;">기존 워크스페이스 참가</label>
+                <input type="text" placeholder="공유받은 워크스페이스 코드 (UUID)" value="550e8400-e29b-41d4-a716-446655440000" disabled style="width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px; font-size:12.5px; background:#faf9ff;">
+              </div>
+              <button class="login-btn" style="width:100%; cursor:default; background: none; border: 1.5px solid var(--line); color: var(--ink); box-shadow: none;" onclick="return false;">참가하기</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="intro-section">
@@ -786,7 +822,7 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
 
   <!-- 2. Workspace Onboarding Card -->
   <div class="login-card" id="workspaceCard" style="display:none; max-width:420px;">
-    <div class="login-kicker">STOCK OPS</div>
+    <div class="login-kicker">StockFit</div>
     <h2 class="login-title">워크스페이스 선택</h2>
     <p class="login-sub" style="margin-bottom:20px;">재고 데이터를 함께 공유할 워크스페이스를 생성하거나, 동료의 워크스페이스 코드를 입력해 참가하세요.</p>
     
@@ -2186,12 +2222,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     await checkSession();
   } else {
     // Offline / Unconfigured fallback
-    const startBtn = document.getElementById('introStart');
-    if (startBtn) {
-      startBtn.addEventListener('click', () => {
-        showAuthScreen();
-      });
-    }
   }
 });
 </script>
