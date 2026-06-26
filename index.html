@@ -863,7 +863,8 @@ tr.budgetline td{background:#fff5e2;color:var(--warn);font-weight:700;text-align
         <h1 style="margin-top:4px;">재고 발주·입고 관리</h1>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-        <div id="userProfileArea" style="display:none; text-align:right; font-size:12.5px; color:var(--ink-soft); background:#fff; border:1.5px solid var(--line); padding:6px 12px; border-radius:12px;">
+        <div id="userProfileArea" style="display:none; text-align:right; font-size:12.5px; color:var(--ink-soft); background:#fff; border:1.5px solid var(--line); padding:6px 12px; border-radius:12px; align-items:center; gap:8px;">
+          <span id="trialBadge" style="display:none; background:#fff3e0; color:#e65100; padding:2px 6px; border-radius:6px; font-weight:700; font-size:11px; white-space:nowrap;"></span>
           <span id="userEmailSpan" style="font-weight:600;">-</span>
           <button class="linkbtn" id="logoutBtn" style="color:var(--bad); margin-left:6px; font-weight:700; text-decoration:none;">로그아웃</button>
         </div>
@@ -1062,53 +1063,108 @@ async function checkSession() {
     if (session) {
       currentUser = session.user;
       
-      // 승인된 이메일 체크 (관리자 계정은 항상 통과)
-      if (currentUser.email !== 'onnnyy2@naver.com') {
+      let isAllowed = false;
+      let isTrial = false;
+      let daysLeft = 0;
+      let isExpired = false;
+
+      // 1. 유료회원/관리자 여부 검사
+      if (currentUser.email === 'onnnyy2@naver.com') {
+        isAllowed = true;
+      } else {
         try {
           const { data: approved, error: appErr } = await supabaseClient
             .from('approved_emails')
             .select('email')
             .eq('email', currentUser.email)
             .maybeSingle();
-            
-          if (appErr || !approved || !approved.email || approved.email.toLowerCase() !== currentUser.email.toLowerCase()) {
-            sessionStorage.removeItem('fileLoaded');
-            sessionStorage.removeItem('visibleProductIds');
-            await supabaseClient.auth.signOut();
-            openUsageModal();
-            return;
+
+          if (approved && approved.email && approved.email.toLowerCase() === currentUser.email.toLowerCase()) {
+            isAllowed = true;
           }
-        } catch (checkErr) {
-          console.error("승인 이메일 체크 에러:", checkErr);
+        } catch (appCheckErr) {
+          console.error("유료회원 체크 에러:", appCheckErr);
+        }
+      }
+
+      // 2. 프로필 조회 및 없을 시 선제 생성 (보안 취약점 방지)
+      let profile = null;
+      try {
+        const { data: existingProfile, error: profErr } = await supabaseClient
+          .from('profiles')
+          .select('workspace_id, trial_start')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+          
+        if (profErr) throw profErr;
+        profile = existingProfile;
+
+        if (!profile) {
+          const pName = currentUser.user_metadata?.name || null;
+          const pPhone = currentUser.user_metadata?.phone || null;
+          const { error: insErr } = await supabaseClient
+            .from('profiles')
+            .insert({ id: currentUser.id, email: currentUser.email, name: pName, phone: pPhone });
+          if (insErr) throw insErr;
+          
+          const { data: newProfile, error: refetchErr } = await supabaseClient
+            .from('profiles')
+            .select('workspace_id, trial_start')
+            .eq('id', currentUser.id)
+            .single();
+          if (refetchErr) throw refetchErr;
+          profile = newProfile;
+        }
+      } catch (profileErr) {
+        console.error("프로필 로드/생성 에러:", profileErr);
+        if (!isAllowed) {
           sessionStorage.removeItem('fileLoaded');
           sessionStorage.removeItem('visibleProductIds');
           await supabaseClient.auth.signOut();
-          openUsageModal();
+          openUsageModal(false);
           return;
         }
       }
+
+      // 3. 유료회원/관리자가 아닌 경우 무료체험 조건 판정
+      if (!isAllowed) {
+        if (profile && profile.trial_start) {
+          const startMs = Date.parse(profile.trial_start);
+          const passedMs = Date.now() - startMs;
+          const limitMs = 15 * 24 * 60 * 60 * 1000; // 15일
+          if (passedMs < limitMs) {
+            isAllowed = true;
+            isTrial = true;
+            daysLeft = Math.ceil((limitMs - passedMs) / (24 * 60 * 60 * 1000));
+          } else {
+            isExpired = true;
+          }
+        }
+      }
+
+      // 4. 권한 없음 -> 로그아웃 및 모달 팝업
+      if (!isAllowed) {
+        sessionStorage.removeItem('fileLoaded');
+        sessionStorage.removeItem('visibleProductIds');
+        await supabaseClient.auth.signOut();
+        openUsageModal(isExpired);
+        return;
+      }
       
+      // 5. 로그인 처리 및 UI 반영
       $('#userEmailSpan').textContent = currentUser.email;
-      $('#userProfileArea').style.display = 'block';
+      $('#userProfileArea').style.display = 'flex';
       $('#qnaArea').style.display = 'flex';
       
-      const { data: profile, error: profErr } = await supabaseClient
-        .from('profiles')
-        .select('workspace_id')
-        .eq('id', currentUser.id)
-        .single();
-        
-      if (profErr && profErr.code !== 'PGRST116') throw profErr;
+      if (isTrial) {
+        $('#trialBadge').textContent = `무료 체험 D-${daysLeft}`;
+        $('#trialBadge').style.display = 'inline-block';
+      } else {
+        $('#trialBadge').style.display = 'none';
+      }
       
-      if (!profile) {
-        const pName = currentUser.user_metadata?.name || null;
-        const pPhone = currentUser.user_metadata?.phone || null;
-        const { error: insErr } = await supabaseClient
-          .from('profiles')
-          .insert({ id: currentUser.id, email: currentUser.email, name: pName, phone: pPhone });
-        if (insErr) throw insErr;
-        showWorkspaceSelection();
-      } else if (!profile.workspace_id) {
+      // 6. 워크스페이스 검사 및 화면 전환
+      if (!profile || !profile.workspace_id) {
         showWorkspaceSelection();
       } else {
         activeWorkspaceId = profile.workspace_id;
@@ -1583,14 +1639,21 @@ function openProducts(){const q=(PSEARCH||'').trim();
 $('#prodBtn').addEventListener('click',openProducts);
 $('#impBtn').addEventListener('click',()=>openImport());
 function closeModal(){$('#modalRoot').innerHTML='';}
-function openUsageModal() {
+function openUsageModal(isExpired = false) {
+  const titleText = isExpired ? "⏳ StockFit 체험 기간 만료" : "🎁 15일 무료 체험";
+  const mainKickerText = isExpired ? "15일 무료 체험이 종료되었습니다" : "카드 등록 없이 바로 시작하세요";
+  const subKickerText = isExpired ? "계속 이용하시려면 정식 서비스 신청을 진행해주세요." : "15일 동안 모든 기능을 무료로 사용해보세요";
+  const priceLabel = isExpired ? "이용 요금: 월 29,000원" : "체험 후 계속 이용 시 월 29,000원";
+  const descText = isExpired ? "아래 버튼을 눌러 정식 이용을 신청해주세요.<br>담당자가 확인 후 이용 안내를 드립니다." : "아래 버튼을 눌러 무료 체험을 신청해주세요.<br>담당자가 확인 후 이용 안내를 드립니다.";
+  const buttonText = isExpired ? "📝 정식 서비스 신청하기" : "🎁 무료 체험 시작하기";
+
   $('#modalRoot').innerHTML = `
     <div class="scrim" id="scrim">
       <div class="modal" style="max-width:440px; border-radius:16px; overflow:hidden;">
         <div class="modal-head" style="background: linear-gradient(135deg, #fcd9f4 0%, #d4e1ff 100%); padding: 24px 20px 20px; border-bottom: none; text-align:center;">
-          <h3 style="margin:0 0 8px; font-size:20px; color:var(--ink);">🎁 15일 무료 체험</h3>
-          <div style="font-size:16px; font-weight:800; color:var(--ink); margin-bottom:4px;">카드 등록 없이 바로 시작하세요</div>
-          <div style="font-size:12.5px; color:var(--ink-soft); font-weight:500;">15일 동안 모든 기능을 무료로 사용해보세요</div>
+          <h3 style="margin:0 0 8px; font-size:20px; color:var(--ink);">${titleText}</h3>
+          <div style="font-size:16px; font-weight:800; color:var(--ink); margin-bottom:4px;">${mainKickerText}</div>
+          <div style="font-size:12.5px; color:var(--ink-soft); font-weight:500;">${subKickerText}</div>
         </div>
         <div class="modal-body" style="padding: 24px; font-family: var(--sans);">
           
@@ -1618,16 +1681,16 @@ function openUsageModal() {
           </div>
 
           <div style="font-size:11.5px; color:var(--ink-soft); text-align:center; margin-bottom:16px; font-weight:500;">
-            체험 후 계속 이용 시 월 29,000원
+            ${priceLabel}
           </div>
           
           <p style="font-size:13px; color:var(--ink); line-height:1.6; text-align:center; margin:0 0 20px;">
-            아래 버튼을 눌러 무료 체험을 신청해주세요.<br>담당자가 확인 후 이용 안내를 드립니다.
+            ${descText}
           </p>
           
           <div style="display:flex; flex-direction:column; gap:10px;">
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSdRKj3e55hKfbdgFsDdL1YbEbPRhSkvdJplZ8baikXyvYoqzw/viewform" target="_blank" class="btn clay" style="text-align:center; text-decoration:none; display:block; padding:12px; font-size:14px; font-weight:700; color:#fff;">
-              🎁 무료 체험 시작하기
+              ${buttonText}
             </a>
             <button class="btn ghost" id="usageCloseBtn" style="width:100%; padding:10px; font-size:13.5px; cursor:pointer;">
               닫기
@@ -2242,6 +2305,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         currentUser = null;
         activeWorkspaceId = null;
         $('#userProfileArea').style.display = 'none';
+        $('#trialBadge').style.display = 'none';
         $('#qnaArea').style.display = 'none';
         $('#workspaceInfoArea').style.display = 'none';
         const intro = $('#introScreen');
