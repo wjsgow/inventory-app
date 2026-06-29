@@ -1466,7 +1466,108 @@ function renderRG(){
   return html;
 }
 
-function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;const lines=(h.lines||[]).map(l=>`<span>${l.label} +${l.amt}</span>`).join('');
+// 4자리 상품 코드 추출 (2015~2035 연도 범위는 제외)
+function getProductCode(label) {
+  const matches = label.match(/\d{4}/g);
+  if (!matches) return null;
+  for (const m of matches) {
+    const num = parseInt(m, 10);
+    if (num >= 2015 && num <= 2035) continue;
+    return m;
+  }
+  return null;
+}
+
+// 옵션명에서 코드, 색상, 사이즈 분해
+function parseOptionLabel(label) {
+  const code = getProductCode(label);
+  const words = label.trim().split(/\s+/);
+  let color = '';
+  let size = '';
+  if (words.length >= 3) {
+    size = words[words.length - 1];
+    color = words[words.length - 2];
+  } else if (words.length === 2) {
+    size = words[words.length - 1];
+  }
+  return { code, color, size };
+}
+
+// 사이즈 비교 가중치 매핑
+const SIZE_ORDER = {
+  'FREE': 0, 'F': 0,
+  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, '2XL': 6, 'XXL': 6, '3XL': 7, 'XXXL': 7, '4XL': 8, 'XXXXL': 8
+};
+
+function compareSizes(sizeA, sizeB) {
+  const cleanA = sizeA.trim().toUpperCase();
+  const cleanB = sizeB.trim().toUpperCase();
+  const isNumA = /^\d+$/.test(cleanA);
+  const isNumB = /^\d+$/.test(cleanB);
+
+  if (isNumA && isNumB) {
+    return parseInt(cleanA, 10) - parseInt(cleanB, 10);
+  }
+  if (isNumA && !isNumB) return -1;
+  if (!isNumA && isNumB) return 1;
+
+  const orderA = SIZE_ORDER[cleanA] !== undefined ? SIZE_ORDER[cleanA] : 999;
+  const orderB = SIZE_ORDER[cleanB] !== undefined ? SIZE_ORDER[cleanB] : 999;
+  if (orderA !== orderB) return orderA - orderB;
+  return cleanA.localeCompare(cleanB);
+}
+
+// 최종 옵션 정렬 함수
+function sortHistoryLines(lines) {
+  return lines.slice().sort((a, b) => {
+    const parseA = parseOptionLabel(a.label);
+    const parseB = parseOptionLabel(b.label);
+
+    // 1. 상품 코드 유무 비교
+    if (parseA.code && !parseB.code) return -1;
+    if (!parseA.code && parseB.code) return 1;
+
+    if (parseA.code && parseB.code) {
+      if (parseA.code !== parseB.code) {
+        return parseA.code.localeCompare(parseB.code);
+      }
+    }
+
+    // 2. 색상 기준 정렬
+    if (parseA.color !== parseB.color) {
+      return parseA.color.localeCompare(parseB.color);
+    }
+
+    // 3. 사이즈 기준 정렬
+    return compareSizes(parseA.size, parseB.size);
+  });
+}
+
+function histItemHTML(h){
+  const now=Date.now();
+  const d=new Date(h.ts);
+  const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  
+  // 정렬 및 표 형태로 렌더링
+  const sorted = sortHistoryLines(h.lines || []);
+  const trs = sorted.map((l, idx) => {
+    const isLast = idx === sorted.length - 1;
+    const borderStyle = isLast ? '' : 'border-bottom:1.5px solid var(--line);';
+    return `<tr style="${borderStyle}">
+      <td style="padding:8px 12px; color:var(--ink);">${l.label}</td>
+      <td style="padding:8px 12px; text-align:right; font-weight:800; color:var(--clay); font-family:var(--mono); white-space:nowrap;">+${l.amt}개</td>
+    </tr>`;
+  }).join('');
+  const linesTable = trs ? `
+    <div style="margin-top:10px; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; background:var(--paper-2);">
+      <table style="width:100%; border-collapse:collapse; font-size:12.5px; text-align:left;">
+        <tbody>
+          ${trs}
+        </tbody>
+      </table>
+    </div>
+  ` : '';
+
   let etaRow='';
   if(h.kind==='order'){
     if(h.received){
@@ -1499,7 +1600,7 @@ function histItemHTML(h){const now=Date.now();const d=new Date(h.ts);const when=
     }
   }
   const delRow=`<div class="hist-actions">${editOptBtn}<button class="linkbtn del" data-histdel="${h.id}">🗑 기록 삭제</button></div>`;
-  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}${workerRow}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${lines?`<div class="hist-break">${lines}</div>`:''}${delRow}</div>`;}
+  return `<div class="hist-item"><div class="hist-top"><div class="hist-when">${when}</div><div class="hist-main"><div class="p">${cardTitle}</div><div class="d">${h.note||''}</div>${infoLabel}${workerRow}</div><div class="hist-amt">+${h.total}${h.spent?`<small>${won(h.spent)}</small>`:''}</div></div>${etaRow}${linesTable}${delRow}</div>`;}
 function monthKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function orderYearChart(filteredOrders){
   const targetOrders = filteredOrders || S.history.filter(h=>h.kind==='order');
