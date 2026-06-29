@@ -1303,12 +1303,30 @@ function cardHTML(p){const u=uiOf(p);
   </div><div class="head-actions"><button class="linkbtn" data-edit="${p.id}">✎ 편집</button></div></div>
   <div class="chtabs">${chtabs}</div>${modebar}${matrixHTML(p)}${foot}</div>`;}
 function renderStock(){
-  if(!sessionStorage.getItem('fileLoaded'))return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;
+  const q = (SEARCH.stock || '').trim();
+  let html = `<div class="rg-toolbar">
+    <div class="searchbox" style="flex:unset; width:100%; max-width:360px;">
+      🔍<input id="stock_search" placeholder="상품명·코드 검색 (쉼표로 여러 개)" value="${q.replace(/"/g,'&quot;')}">
+    </div>
+  </div>`;
+
+  if(!sessionStorage.getItem('fileLoaded')) return html + `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">재고 파일이 필요해요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 재고·판매 파일을 올려주세요.</div></div>`;
+  
   const visible = new Set(JSON.parse(sessionStorage.getItem('visibleProductIds') || '[]'));
-  const filtered = S.products.filter(p => visible.has(p.id));
-  if(!filtered.length)return `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;
+  let filtered = S.products.filter(p => visible.has(p.id));
+  
+  if(!filtered.length) return html + `<div class="empty"><div class="big">📊</div><div style="font-weight:700;color:var(--ink)">아직 데이터가 없어요</div><div style="margin-top:6px"><b>📁 파일 가져오기</b>로 내창고 재고 파일과 판매처별 판매 파일을 올려보세요.</div></div>`;
+  
+  if (q) {
+    filtered = filtered.filter(p => matchSearch(productSearchText(p), q));
+  }
+  
+  if (!filtered.length && q) {
+    return html + `<div class="empty"><div class="muted">검색 결과가 없어요.</div></div>`;
+  }
+
   filtered.sort((a,b)=>sumTotalSales(b)-sumTotalSales(a));
-  return filtered.map(cardHTML).join('');
+  return html + filtered.map(cardHTML).join('');
 }
 
 /* ===== SUPPLIER ORDER ===== */
@@ -1316,7 +1334,7 @@ let ORD={};
 let HISTTAB='all';
 let HIST_VENDOR_FILTER='all';
 const SEL={order:new Set(),rg:new Set()};
-let SEARCH={order:'',rg:''};
+let SEARCH={stock:'',order:'',rg:''};
 let showCheckedOnlyOrder = false;
 const won=n=>'₩'+(n||0).toLocaleString('ko-KR');
 function costOf(pid){return (S.cost&&S.cost[pid])||0;}
@@ -1548,8 +1566,27 @@ function renderHist(){if(!S.history.length)return `<div class="empty"><div class
   Object.entries(groups).forEach(([b,list])=>{const tot=list.reduce((a,h)=>a+(h.total||0),0);html+=`<div class="month-head">🚀 ${b} <span class="mtot">${list.length}건 · ${tot}개</span></div>`+list.slice().reverse().map(histItemHTML).join('');});
   return html;}
 
-function render(){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===TAB));renderAlerts();
-  $('#view').innerHTML=TAB==='stock'?renderStock():(TAB==='order'?renderOrder():(TAB==='rg'?renderRG():renderHist()));}
+function render(){
+  const activeId = document.activeElement ? document.activeElement.id : null;
+  const start = document.activeElement ? document.activeElement.selectionStart : null;
+  const end = document.activeElement ? document.activeElement.selectionEnd : null;
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===TAB));
+  renderAlerts();
+  $('#view').innerHTML=TAB==='stock'?renderStock():(TAB==='order'?renderOrder():(TAB==='rg'?renderRG():renderHist()));
+
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) {
+      el.focus();
+      try {
+        if (start !== null && end !== null && typeof el.setSelectionRange === 'function') {
+          el.setSelectionRange(start, end);
+        }
+      } catch(e) {}
+    }
+  }
+}
 
 /* events */
 $('#view').addEventListener('input',e=>{const t=e.target;
@@ -1563,8 +1600,9 @@ $('#view').addEventListener('input',e=>{const t=e.target;
   if(t.classList.contains('cost-in')){S.cost[t.dataset.pid]=Math.max(0,parseInt(t.value)||0);save();return;}
   if(t.id==='o_budget'||t.id==='rg_budget'){S.budget=Math.max(0,parseInt(t.value)||0);save();return;}
   if(t.id==='o_subdays'){S.subRecentDays=Math.max(1,parseInt(t.value)||7);save();render();return;}
-  if(t.id==='ord_search'){SEARCH.order=t.value;return;}
-  if(t.id==='rg_search'){SEARCH.rg=t.value;return;}
+  if(t.id==='stock_search'){SEARCH.stock=t.value;render();return;}
+  if(t.id==='ord_search'){SEARCH.order=t.value;render();return;}
+  if(t.id==='rg_search'){SEARCH.rg=t.value;render();return;}
   if(t.id==='o_lead'){S.leadWeeks=Math.max(0,parseInt(t.value)||0);ORD={};save();render();return;}
   if(t.id==='o_safe'){S.safetyWeeks=Math.max(0,parseInt(t.value)||0);ORD={};save();render();return;}
   if(t.id==='rg_days'){S.rgTargetDays=Math.max(1,parseInt(t.value)||10);Object.entries(S.rgBoards).forEach(([bz,bd])=>(bd.items||[]).forEach(it=>{it.send=rgRecommend(bz,it).need;}));save();render();return;}
@@ -1611,7 +1649,7 @@ $('#view').addEventListener('change',e=>{const t=e.target;
   if(t.id==='o_round5'){S.round5=t.checked;ORD={};save();render();return;}
   if(t.id==='o_checked_only'){showCheckedOnlyOrder=t.checked;render();return;}
   if(t.classList.contains('eta-in')){const h=S.history.find(x=>x.id===t.dataset.id);if(h&&t.value){const p=t.value.split('-');h.eta=new Date(+p[0],+p[1]-1,+p[2],12,0,0).getTime();save();render();}return;}
-  if(t.classList.contains('ord-in')||t.classList.contains('rg-in')||t.classList.contains('cost-in')||t.id==='ord_search'||t.id==='rg_search'||t.id==='o_budget'||t.id==='rg_budget'){render();return;}
+  if(t.classList.contains('ord-in')||t.classList.contains('rg-in')||t.classList.contains('cost-in')||t.id==='ord_search'||t.id==='rg_search'||t.id==='stock_search'||t.id==='o_budget'||t.id==='rg_budget'){render();return;}
 });
 /* drag-select */
 let _drag=false,_dmode=null,_dkind=null;
